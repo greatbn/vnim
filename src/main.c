@@ -166,11 +166,14 @@ static void IMPreeditDraw (XIMS ims, IMForwardEventStruct *call_data, const char
     pcb.major_code = XIM_PREEDIT_DRAW;
     pcb.connect_id = call_data->connect_id;
     pcb.icid = call_data->icid;
+    
+    static last_len = 0;
 
     pcb.todo.draw.caret = len;
     pcb.todo.draw.chg_first = 0;
-    pcb.todo.draw.chg_length = len;
+    pcb.todo.draw.chg_length = last_len;
     pcb.todo.draw.text = &text;
+    last_len = len;
 
     for (i = 0; i < len; i++) {
         if (feedback[i] == 0) {
@@ -244,7 +247,6 @@ void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
                 break;
             case PREEDIT_ACTION_COMMIT:
                 IMPreeditCommit(ims, call_data, getPreEditText());
-                IMPreeditDraw(ims, call_data, "");
                 break;
             case PREEDIT_ACTION_HIDE:
                 IMPreeditEnd(ims, call_data);
