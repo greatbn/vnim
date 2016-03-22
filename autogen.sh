@@ -1,4 +1,2 @@
 #!/bin/sh
-aclocal
-automake --add-missing --copy
-autoconf
+gnome-autogen.sh "$@"
