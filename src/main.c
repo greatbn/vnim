@@ -34,6 +34,7 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <IMdkit.h>
 #include <Xi18n.h>
 #include "locales.h"
+#include "unikey_xim.h"
 
 #define DEFAULT_IMNAME "unikey"
 #define PROG_NAME "Unikey XIM"
@@ -149,6 +150,76 @@ Bool IsKey(XIMS ims, IMForwardEventStruct *call_data, XIMTriggerKey *trigger)
     return False;
 }
 
+static void IMPreeditDraw (XIMS ims, IMForwardEventStruct *call_data, const char * buffer)
+{
+    IMPreeditCBStruct pcb;
+    XIMText text;
+    XTextProperty tp;
+
+    unsigned int j, i, len;
+    
+    static char feedback[1000] = {0};
+
+    len = strlen(buffer);
+    printf("len = %d\n", len);
+
+    pcb.major_code = XIM_PREEDIT_DRAW;
+    pcb.connect_id = call_data->connect_id;
+    pcb.icid = call_data->icid;
+
+    pcb.todo.draw.caret = len;
+    pcb.todo.draw.chg_first = 0;
+    pcb.todo.draw.chg_length = len;
+    pcb.todo.draw.text = &text;
+
+    for (i = 0; i < len; i++) {
+        if (feedback[i] == 0) {
+            feedback[i] = XIMUnderline;
+        }
+    }
+    text.feedback = feedback;
+
+    if (len > 0) {
+        printf("preEditDraw\n");
+        Xutf8TextListToTextProperty (ims->core.display,
+                                     (char **)&buffer,
+                                     1, XCompoundTextStyle, &tp);
+        text.encoding_is_wchar = 0;
+        text.length = strlen ((char*)tp.value);
+        
+        text.string.multi_byte = (char*)tp.value;
+        printf("length = %d %s\n",text.length, text.string.multi_byte);
+        IMCallCallback (ims, (XPointer) & pcb);
+        XFree (tp.value);
+    } else {
+        printf("draw nothing\n");
+        text.encoding_is_wchar = 0;
+        text.length = 0;
+        text.string.multi_byte = "";
+        IMCallCallback (ims, (XPointer) & pcb);
+    }
+}
+
+void IMPreeditCommit(XIMS ims, IMForwardEventStruct *call_data, const char *buffer)
+{
+    IMCommitStruct commitInfo;
+    XIMText text;
+    XTextProperty tp;
+    //IMCommitStruct commitInfo;
+    
+    Xutf8TextListToTextProperty (ims->core.display,
+                                    (char **)&buffer,
+                                    1, XCompoundTextStyle, &tp);    
+    
+    *((IMAnyStruct *)&commitInfo) = *((IMAnyStruct *)call_data);
+    commitInfo.major_code = XIM_COMMIT;
+    commitInfo.icid = call_data->icid;
+    commitInfo.connect_id = call_data->connect_id;
+    commitInfo.flag = XimLookupChars;
+    commitInfo.commit_string = (char*)tp.value;
+    IMCommitString(ims, (XPointer)&commitInfo);
+}
+
 void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
 {
     printf("ProcessKey\n");
@@ -163,10 +234,29 @@ void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
     count = XLookupString(kev, strbuf, STRBUFLEN, &keysym, NULL);
 
     if (count > 0) {
-	    fprintf(stdout, "[%s] ", strbuf);
+	    fprintf(stdout, "[%s]\n", strbuf);
+        processKey(strbuf[0]);
+        switch (getPreEditAction()) {
+            case PREEDIT_ACTION_START:
+                IMPreeditStart(ims, call_data);
+            case PREEDIT_ACTION_DRAW:
+                IMPreeditDraw(ims, call_data, getPreEditText());
+                break;
+            case PREEDIT_ACTION_COMMIT:
+                IMPreeditCommit(ims, call_data, getPreEditText());
+                IMPreeditDraw(ims, call_data, "");
+                break;
+            case PREEDIT_ACTION_HIDE:
+                IMPreeditEnd(ims, call_data);
+                IMForwardEvent(ims, call_data);
+                break;
+        }
+    } else {
+        printf("this should not happen\n");
     }
     
-    IMForwardEvent(ims, call_data);
+    
+    XSync(ims->core.display, False);    
 }
 
 Bool MyForwardEventHandler(XIMS ims, IMForwardEventStruct* call_data)
@@ -179,45 +269,37 @@ Bool MyForwardEventHandler(XIMS ims, IMForwardEventStruct* call_data)
     	return True;
     }
 
-    /* In case of Dynamic Event Flow without registering OFF keys,
-       the end of preediting must be notified from IMserver to
-       IMlibrary. */
-    // if (!use_offkey) {
-	if (IsKey(ims, call_data, Trigger_Keys)) {
-	    return IMPreeditEnd(ims, (XPointer)call_data);
-	}
-    // }
     if (IsKey(ims, call_data, Conversion_Keys)) {
-	XTextProperty tp;
-	Display *display = ims->core.display;
-	/* char *text = "�o�O�@�� IM ���A��������"; */
-	char *text = "���üy";
-	char **list_return; /* [20]; */
-	int count_return; /* [20]; */
+        XTextProperty tp;
+        Display *display = ims->core.display;
+        /* char *text = "�o�O�@�� IM ���A��������"; */
+        char *text = "���üy";
+        char **list_return; /* [20]; */
+        int count_return; /* [20]; */
 
-	fprintf(stderr, "matching ctrl-k...\n");
-	XmbTextListToTextProperty(display, (char **)&text, 1,
-				  XCompoundTextStyle,
-				  &tp);
+        fprintf(stderr, "matching ctrl-k...\n");
+        XmbTextListToTextProperty(display, (char **)&text, 1,
+                    XCompoundTextStyle,
+                    &tp);
 
-	((IMCommitStruct*)call_data)->flag |= XimLookupChars; 
-	((IMCommitStruct*)call_data)->commit_string = (char *)tp.value;
-	fprintf(stderr, "commiting string...(%s)\n", tp.value);
-	IMCommitString(ims, (XPointer)call_data);
-#if 0
-	XmbTextPropertyToTextList(display, &tp, &list_return, &count_return);
-	fprintf(stderr, "converted back: %s\n", *list_return);
-#endif
-	XFree(tp.value); 
-	fprintf(stderr, "survived so far..\n");
-    }
-    else if (IsKey(ims, call_data, Forward_Keys)) {
-        IMForwardEventStruct forward_ev = *((IMForwardEventStruct *)call_data);
+        ((IMCommitStruct*)call_data)->flag |= XimLookupChars; 
+        ((IMCommitStruct*)call_data)->commit_string = (char *)tp.value;
+        fprintf(stderr, "commiting string...(%s)\n", tp.value);
+        IMCommitString(ims, (XPointer)call_data);
+    #if 0
+        XmbTextPropertyToTextList(display, &tp, &list_return, &count_return);
+        fprintf(stderr, "converted back: %s\n", *list_return);
+    #endif
+        XFree(tp.value); 
+        fprintf(stderr, "survived so far..\n");
+        }
+        else if (IsKey(ims, call_data, Forward_Keys)) {
+            IMForwardEventStruct forward_ev = *((IMForwardEventStruct *)call_data);
 
-	fprintf(stderr, "TAB and RETURN forwarded...\n");
-	IMForwardEvent(ims, (XPointer)&forward_ev);
+        fprintf(stderr, "TAB and RETURN forwarded...\n");
+        IMForwardEvent(ims, (XPointer)&forward_ev);
     } else {
-	ProcessKey(ims, call_data);
+    	ProcessKey(ims, call_data);
     }
     return True;
 }

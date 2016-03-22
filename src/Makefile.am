@@ -2,6 +2,7 @@ bin_PROGRAMS = unikey-xim
 unikey_xim_SOURCES = \
 	main.c \
     IC.c \
+    unikey_xim.c \
 	$(NULL)
     
 unikey_xim_LDADD = \
