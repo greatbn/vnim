@@ -1,5 +1,6 @@
 SUBDIRS = \
     src/IMdkit \
+    src/ukengine \
 	src \
 	$(NULL)
 

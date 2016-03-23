@@ -110,8 +110,8 @@ extern "C" {
   //The engine will return to normal mode when a word-break occurs.
   void UnikeySetSingleMode();
 
-  bool UnikeyAtWordBeginning();
 #if defined(__cplusplus)
+  bool UnikeyAtWordBeginning();
 }
 #endif
 

@@ -7,6 +7,9 @@
     // #include <Xi18n.h>
 #include "unikey_xim.h"
 
+//ukengine
+#include "unikey.h"
+
 #define BUFFER_LENTH 1024
 static char * preEditText = NULL;
 static int preEditLength = 0;
@@ -85,6 +88,8 @@ void UnikeyInit() {
     if (preEditText == NULL) {
         preEditText = (char *)malloc(BUFFER_LENTH);
     }
+    
+    UnikeySetup();  
 }
 
 void UnikeyDestroy() {
