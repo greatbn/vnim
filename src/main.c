@@ -160,7 +160,7 @@ Bool MyDestroyICHandler(XIMS ims, IMChangeICStruct *call_data)
 // }
 static Bool gIsPreeditShowing = False;
 
-static void IMPreeditDraw (XIMS ims, IMForwardEventStruct *call_data, const char * buffer)
+static void IMPreeditDraw(XIMS ims, IMForwardEventStruct *call_data, const wchar_t * buffer)
 {
     static int last_len = 0;
     if (gIsPreeditShowing == False) {
@@ -170,42 +170,44 @@ static void IMPreeditDraw (XIMS ims, IMForwardEventStruct *call_data, const char
         last_len = 0;
     }
     
-    printf("IMPreeditDraw\n");
     IMPreeditCBStruct pcb;
     XIMText text;
-    XTextProperty tp;
-
-    unsigned int j, i, len;
-    
     static XIMFeedback feedback[128] = {0};
-
-    len = strlen(buffer);
-    printf("len = %d\n", len);
-
-    pcb.major_code = XIM_PREEDIT_DRAW;
-    pcb.connect_id = call_data->connect_id;
-    pcb.icid = call_data->icid;
     
-    pcb.todo.draw.caret = len;
-    pcb.todo.draw.chg_first = 0;
-    pcb.todo.draw.chg_length = last_len;
-    pcb.todo.draw.text = &text;
-    last_len = len;
+    
+    if (buffer != NULL) {
+    
+        printf("IMPreeditDraw\n");
+        IMPreeditCBStruct pcb;
+        XIMText text;
+        XTextProperty tp;
 
-    for (i = 0; i < len; i++) {
-        feedback[i] = XIMUnderline;
-    }
-    feedback[len] = 0;
-    // for (i = len; i < 128; i++) {
-    //     feedback[len] = 0;    
-    // }
+        unsigned int j, i, len;
         
-    text.feedback = feedback;
 
-    if (len > 0) {
+        len = wcslen(buffer);
+        printf("len = %d\n", len);
+
+        pcb.major_code = XIM_PREEDIT_DRAW;
+        pcb.connect_id = call_data->connect_id;
+        pcb.icid = call_data->icid;
+        
+        pcb.todo.draw.caret = len;
+        pcb.todo.draw.chg_first = 0;
+        pcb.todo.draw.chg_length = last_len;
+        pcb.todo.draw.text = &text;
+        last_len = len;
+
+        for (i = 0; i < len; i++) {
+            feedback[i] = XIMUnderline;
+        }
+        feedback[len] = 0;
+            
+        text.feedback = feedback;
+
         printf("preEditDraw\n");
-        Xutf8TextListToTextProperty (ims->core.display,
-                                     (char **)&buffer,
+        XwcTextListToTextProperty (ims->core.display,
+                                     (wchar_t **)&buffer,
                                      1, XCompoundTextStyle, &tp);
         text.encoding_is_wchar = 0;
         text.length = strlen ((char*)tp.value);
@@ -216,23 +218,35 @@ static void IMPreeditDraw (XIMS ims, IMForwardEventStruct *call_data, const char
         XFree (tp.value);
     } else {
         printf("draw nothing\n");
+        pcb.major_code = XIM_PREEDIT_DRAW;
+        pcb.connect_id = call_data->connect_id;
+        pcb.icid = call_data->icid;        
+        pcb.todo.draw.caret = 0;
+        pcb.todo.draw.chg_first = 0;
+        pcb.todo.draw.chg_length = last_len;
+        pcb.todo.draw.text = &text;
+                
         text.encoding_is_wchar = 0;
         text.length = 0;
         text.string.multi_byte = "";
+        feedback[0] = 0;
+        text.feedback = feedback;
+                
         IMCallCallback (ims, (XPointer) & pcb);
+        last_len = 0;
     }
 }
 
 static void IMPreeditHide (XIMS ims, IMForwardEventStruct *call_data) {
     if (gIsPreeditShowing == True) {
         printf("IMPreeditHide\n");        
-        IMPreeditDraw(ims, call_data, "");
+        IMPreeditDraw(ims, call_data, NULL);
         IMPreeditEnd(ims, call_data);
         gIsPreeditShowing = False;
     }
 }
 
-void IMPreeditCommit(XIMS ims, IMForwardEventStruct *call_data, const char *buffer)
+void IMPreeditCommit(XIMS ims, IMForwardEventStruct *call_data, const wchar_t *buffer)
 {
     //hide preedit text before doing commit
     IMPreeditHide(ims, call_data);
@@ -241,8 +255,8 @@ void IMPreeditCommit(XIMS ims, IMForwardEventStruct *call_data, const char *buff
     XIMText text;
     XTextProperty tp;
     
-    Xutf8TextListToTextProperty (ims->core.display,
-                                    (char **)&buffer,
+    XwcTextListToTextProperty (ims->core.display,
+                                    (wchar_t **)&buffer,
                                     1, XCompoundTextStyle, &tp);    
     
     *((IMAnyStruct *)&commitInfo) = *((IMAnyStruct *)call_data);
@@ -271,20 +285,20 @@ void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
                 printf("PREEDIT_ACTION_COMMIT\n");
                 IMPreeditCommit(ims, call_data, getPreEditText());
                 break;
-            case PREEDIT_ACTION_DISCARD:
-                printf("PREEDIT_ACTION_DISCARD\n");
-                IMPreeditHide(ims, call_data);
-                break;
             case PREEDIT_ACTION_COMMIT_FORWARD:
                 printf("PREEDIT_ACTION_COMMIT_FORWARD %d\n",call_data->sync_bit);
                 IMPreeditCommit(ims, call_data, getPreEditText());
                 //XSync(ims->core.display, False);
                 IMForwardEvent(ims, call_data);
                 break;
-            case PREEDIT_ACTION_DISCARD_FORWARD:
+            case PREEDIT_ACTION_FORWARD:
                 printf("PREEDIT_ACTION_DISCARD_FORWARD\n");
                 IMPreeditHide(ims, call_data);
                 IMForwardEvent(ims, call_data);
+                break;
+            case PREEDIT_ACTION_DISCARD:
+                printf("PREEDIT_ACTION_DISCARD\n");
+                IMPreeditHide(ims, call_data);
                 break;
             default:
                 printf("no case defined, this should not happen\n");

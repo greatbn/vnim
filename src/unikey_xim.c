@@ -9,9 +9,10 @@
 
 //ukengine
 #include "unikey.h"
+#include "wchar.h"
 
 #define BUFFER_LENTH 1024
-static char * preEditText = NULL;
+static wchar_t * preEditText = NULL;
 static int preEditLength = 0;
 static int preEditAction = PREEDIT_ACTION_NONE;
 
@@ -19,9 +20,41 @@ int getPreEditAction() {
     return preEditAction;  
 }
 
-const char * getPreEditText() {
+const wchar_t * getPreEditText() {
     // strcpy(preEditText, "Bong");
     return preEditText;
+}
+
+void handleEngineResult() {
+    printf("handleEngineResult %d, %d\n",UnikeyBackspaces, UnikeyBufChars);
+    if (UnikeyBackspaces > 0) {
+        int i;
+        for (i = 0; i < UnikeyBackspaces; i++) {
+            preEditText[--preEditLength] = 0;
+        }
+    }
+    
+    printf("delete done\n");
+    
+    if (UnikeyBufChars > 0)
+    {
+        printf("UnikeyBuf = %s\n",UnikeyBuf);
+        UnikeyBuf[UnikeyBufChars] = 0;
+        static wchar_t buffer[100];
+        int newLen = mbstowcs(buffer, UnikeyBuf, 100);
+        printf("newLen = %d\n",newLen);
+        if (newLen > 0) {
+            //memcpy(preEditText + preEditLength, UnikeyBuf, UnikeyBufChars);        
+            wcsncpy((wchar_t*)(preEditText + preEditLength), buffer, newLen);
+            preEditLength += newLen;
+            printf("new length = %d\n",preEditLength);
+            preEditText[preEditLength] = 0;
+        } else {
+            printf("ERROR \n");
+            preEditText[preEditLength = 0] = 0;
+        }
+    }
+    printf("handleEngineResult done\n");
 }
 
 #define STRBUFLEN 64
@@ -32,9 +65,11 @@ void UnikeyProcessKey(XKeyEvent * keyEvent) {
         return;
     }
     
+    
     // printf("ProcessKey\n");
     static char strbuf[STRBUFLEN];
-    KeySym keysym;
+    static unsigned char keyval;
+    static KeySym keysym;
     int count;
 
     // fprintf(stderr, "Processing \n");
@@ -42,18 +77,37 @@ void UnikeyProcessKey(XKeyEvent * keyEvent) {
     count = XLookupString(keyEvent, strbuf, STRBUFLEN, &keysym, NULL);
     printf("keysym = %d, keycode = %d\n",keysym,keyEvent->keycode);
     
+    if (keysym == XK_BackSpace && preEditLength > 0) {
+        printf("backspace pressed\n");
+        
+        //preediting
+        UnikeyBackspacePress();
+        handleEngineResult(True);
+        
+        if (preEditLength > 0) {
+            preEditAction = PREEDIT_ACTION_DRAW;
+        } else {
+            preEditAction = PREEDIT_ACTION_DISCARD;
+        }
+        return;
+    }
+    
     if (count > 0) {
-        if (strbuf[0] >= ' ' && strbuf[0] <= '~' ) {
-            printf("processKey [%c]\n", strbuf[0]);
-            preEditText[preEditLength++] = strbuf[0];
-            preEditText[preEditLength] = '\0';
-            printf("preedit text %s\n",preEditText);
-            if (preEditLength > 4) {
-                preEditLength = 0;
-                //needCommit = 1;
-                preEditAction = PREEDIT_ACTION_COMMIT;
-                return;
+        keyval = strbuf[0]; 
+        if (keyval > ' ' && keyval <= '~' ) {
+            printf("processKey [%c]. shift %d, caplock %d\n", keyval, keyEvent->state & ShiftMask, keyEvent->state & LockMask);
+            UnikeySetCapsState(keyEvent->state & ShiftMask, keyEvent->state & LockMask);
+            UnikeyFilter(keyval);
+            handleEngineResult(False);
+            
+            if (UnikeyBufChars == 0) {
+                //add key manually
+                preEditText[preEditLength++] = keyval;
+                //swprintf(preEditText, 100, L"%hs", keyval);
             }
+            
+            wprintf("preEditLength = %d, preEditText = %ls\n", preEditLength, preEditText);
+            
             preEditAction = PREEDIT_ACTION_DRAW;
             return;
         }
@@ -62,12 +116,14 @@ void UnikeyProcessKey(XKeyEvent * keyEvent) {
     if (preEditLength > 0) {
         preEditAction = PREEDIT_ACTION_COMMIT_FORWARD;
     } else {
-        preEditAction = PREEDIT_ACTION_DISCARD_FORWARD;
+        preEditAction = PREEDIT_ACTION_FORWARD;
     }
 }
 
 void UnikeyReset() {
-    preEditText[preEditLength = 0] = 0;
+    preEditLength = 0;
+    memset(preEditText, 0, BUFFER_LENTH);
+    UnikeyResetBuf();
 }
 
 void UnikeyCommitDone() {
@@ -86,7 +142,7 @@ void UnikeyFocusOut() {
 
 void UnikeyInit() {
     if (preEditText == NULL) {
-        preEditText = (char *)malloc(BUFFER_LENTH);
+        preEditText = (wchar_t *)malloc(sizeof(wchar_t) * BUFFER_LENTH);
     }
     
     UnikeySetup();  
