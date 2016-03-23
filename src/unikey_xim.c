@@ -23,10 +23,6 @@ const char * getPreEditText() {
 
 #define STRBUFLEN 64
 void UnikeyProcessKey(XKeyEvent * keyEvent) {
-    if (preEditText == NULL) {
-        preEditText = (char *)malloc(BUFFER_LENTH);
-    }
-    
     if ((keyEvent->state & ControlMask) == ControlMask) {
         printf("special key, hot key\n");
         preEditAction = PREEDIT_ACTION_COMMIT_FORWARD;
@@ -41,11 +37,11 @@ void UnikeyProcessKey(XKeyEvent * keyEvent) {
     // fprintf(stderr, "Processing \n");
     memset(strbuf, 0, STRBUFLEN);
     count = XLookupString(keyEvent, strbuf, STRBUFLEN, &keysym, NULL);
-    printf("keysym = %d",keysym);
+    printf("keysym = %d, keycode = %d\n",keysym,keyEvent->keycode);
     
     if (count > 0) {
-        printf("processKey [%c]\n", strbuf[0]);
         if (strbuf[0] >= ' ' && strbuf[0] <= '~' ) {
+            printf("processKey [%c]\n", strbuf[0]);
             preEditText[preEditLength++] = strbuf[0];
             preEditText[preEditLength] = '\0';
             printf("preedit text %s\n",preEditText);
@@ -67,6 +63,31 @@ void UnikeyProcessKey(XKeyEvent * keyEvent) {
     }
 }
 
-void UnikeyCommitDone() {
+void UnikeyReset() {
     preEditText[preEditLength = 0] = 0;
+}
+
+void UnikeyCommitDone() {
+    UnikeyReset();
+}
+
+void UnikeyFocusIn() {
+    printf("Focus In\n");
+    UnikeyReset();
+}
+
+void UnikeyFocusOut() {
+    printf("Focus out\n");
+    UnikeyReset();
+}
+
+void UnikeyInit() {
+    if (preEditText == NULL) {
+        preEditText = (char *)malloc(BUFFER_LENTH);
+    }
+}
+
+void UnikeyDestroy() {
+    free(preEditText);
+    preEditText = NULL;
 }

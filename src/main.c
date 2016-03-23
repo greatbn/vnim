@@ -40,13 +40,22 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #define PROG_NAME "Unikey XIM"
 
 /* Supported Inputstyles */
+// static XIMStyle Styles[] = {
+//     XIMPreeditPosition  | XIMStatusNothing,
+//     XIMPreeditCallbacks | XIMStatusNothing,
+//     XIMPreeditNothing   | XIMStatusNothing,
+//     XIMPreeditPosition  | XIMStatusCallbacks,
+//     XIMPreeditCallbacks | XIMStatusCallbacks,
+//     XIMPreeditNothing   | XIMStatusCallbacks,
+//     0
+// };
+
 static XIMStyle Styles[] = {
-    XIMPreeditPosition  | XIMStatusNothing,
-    XIMPreeditCallbacks | XIMStatusNothing,
-    XIMPreeditNothing   | XIMStatusNothing,
-    XIMPreeditPosition  | XIMStatusCallbacks,
-    XIMPreeditCallbacks | XIMStatusCallbacks,
-    XIMPreeditNothing   | XIMStatusCallbacks,
+    XIMPreeditCallbacks|XIMStatusCallbacks,
+    XIMPreeditPosition|XIMStatusArea,
+    XIMPreeditPosition|XIMStatusNothing,
+    XIMPreeditArea|XIMStatusArea,
+    XIMPreeditNothing|XIMStatusNothing,
     0
 };
 
@@ -63,11 +72,11 @@ static XIMTriggerKey Conversion_Keys[] = {
 };
 
 /* Forward Keys List */
-static XIMTriggerKey Forward_Keys[] = {
-    {XK_Return, 0, 0},
-    {XK_Tab, 0, 0},
-    {0L, 0L, 0L}
-};
+// static XIMTriggerKey Forward_Keys[] = {
+//     {XK_Return, 0, 0},
+//     {XK_Tab, 0, 0},
+//     {0L, 0L, 0L}
+// };
 
 static XIMEncoding SupportedEncodings[] = {
     "COMPOUND_TEXT",
@@ -267,15 +276,14 @@ void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
                 IMPreeditHide(ims, call_data);
                 break;
             case PREEDIT_ACTION_COMMIT_FORWARD:
-                printf("PREEDIT_ACTION_COMMIT_FORWARD\n");
+                printf("PREEDIT_ACTION_COMMIT_FORWARD %d\n",call_data->sync_bit);
                 IMPreeditCommit(ims, call_data, getPreEditText());
-                XSync(ims->core.display, False);
+                //XSync(ims->core.display, False);
                 IMForwardEvent(ims, call_data);
                 break;
             case PREEDIT_ACTION_DISCARD_FORWARD:
                 printf("PREEDIT_ACTION_DISCARD_FORWARD\n");
                 IMPreeditHide(ims, call_data);
-                XSync(ims->core.display, False);
                 IMForwardEvent(ims, call_data);
                 break;
             default:
@@ -374,10 +382,13 @@ Bool MyProtoHandler(XIMS ims, IMProtocol* call_data)
 	return MyForwardEventHandler(ims, call_data);
       case XIM_SET_IC_FOCUS:
         fprintf(stderr, "XIM_SET_IC_FOCUS()\n");
-	return True;
+        UnikeyFocusIn();
+	    return True;
       case XIM_UNSET_IC_FOCUS:
         fprintf(stderr, "XIM_UNSET_IC_FOCUS:\n");
-	return True;
+        IMPreeditCommit(ims, call_data, getPreEditText());
+        UnikeyFocusOut();
+	    return True;
       case XIM_RESET_IC:
         fprintf(stderr, "XIM_RESET_IC_FOCUS:\n");
 	return True;
@@ -390,8 +401,12 @@ Bool MyProtoHandler(XIMS ims, IMProtocol* call_data)
       case XIM_PREEDIT_CARET_REPLY:
         fprintf(stderr, "XIM_PREEDIT_CARET_REPLY:\n");
 	return MyPreeditCaretReplyHandler(ims, call_data);
+        case XIM_SYNC_REPLY:
+            printf("sync done\n");
+            return True;
       default:
-	fprintf(stderr, "Unknown IMDKit Protocol message type\n");
+      //printf("testing\n");
+	fprintf(stderr, "Unknown IMDKit Protocol message type %d\n", call_data->major_code);
 	break;
     }
 }
@@ -499,6 +514,8 @@ char **argv;
     }
     encodings->count_encodings = sizeof(SupportedEncodings)/sizeof(XIMEncoding) - 1;
     encodings->supported_encodings = SupportedEncodings;
+    
+    UnikeyInit(); //init unikey
 
     ims = IMOpenIM(dpy,
 		   IMModifiers, "Xi18n",

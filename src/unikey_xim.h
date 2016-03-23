@@ -13,4 +13,8 @@ int getPreEditAction();
 const char* getPreEditText();
 void UnikeyProcessKey(XKeyEvent * keyEvent);
 void UnikeyCommitDone();
+void UnikeyFocusIn();
+void UnikeyFocusOut();
+void UnikeyInit();
+void UnikeyDestroy();
 #endif
