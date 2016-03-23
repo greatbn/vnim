@@ -66,6 +66,7 @@ extern "C" {
     extern unsigned char UnikeyBuf[];
     extern int UnikeyBackspaces;
     extern int UnikeyBufChars;
+    extern int AtWordEnd;
     extern UkOutputType UnikeyOutput;
 
   void UnikeySetup(); // always call this first

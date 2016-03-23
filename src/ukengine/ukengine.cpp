@@ -47,6 +47,7 @@ using namespace std;
 #define IS_STD_VN_UPPER(x) ((x) >= VnStdCharOffset && (x) < (VnStdCharOffset + TOTAL_ALPHA_VNCHARS) && IS_EVEN(x))
 
 bool IsVnVowel[vnl_lastChar];
+int AtWordEnd; // check if we are at the end of a word or not
 
 extern VnLexiName AZLexiUpper[]; //defined in inputproc.cpp
 extern VnLexiName AZLexiLower[];
@@ -1752,6 +1753,8 @@ int UkEngine::process(unsigned int keyCode, int & backs, unsigned char *outBuf, 
     m_keyRestored = false;
     m_keyRestoring = false;
     m_outType = UkCharOutput;
+    
+    AtWordEnd = 0;
 
     m_pCtrl->input.keyCodeToEvent(keyCode, ev);
 
@@ -2282,6 +2285,8 @@ bool UkEngine::atWordBeginning()
 //--------------------------------------------------
 int UkEngine::processWordEnd(UkKeyEvent & ev)
 {
+    AtWordEnd = 1; //now we are at the end of a word
+    
     if (m_pCtrl->options.macroEnabled && macroMatch(ev))
         return 1;
 

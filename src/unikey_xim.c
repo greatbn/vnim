@@ -38,13 +38,11 @@ void handleEngineResult() {
     
     if (UnikeyBufChars > 0)
     {
-        printf("UnikeyBuf = %s\n",UnikeyBuf);
         UnikeyBuf[UnikeyBufChars] = 0;
         static wchar_t buffer[100];
         int newLen = mbstowcs(buffer, UnikeyBuf, 100);
         printf("newLen = %d\n",newLen);
         if (newLen > 0) {
-            //memcpy(preEditText + preEditLength, UnikeyBuf, UnikeyBufChars);        
             wcsncpy((wchar_t*)(preEditText + preEditLength), buffer, newLen);
             preEditLength += newLen;
             printf("new length = %d\n",preEditLength);
@@ -103,20 +101,26 @@ void UnikeyProcessKey(XKeyEvent * keyEvent) {
             if (UnikeyBufChars == 0) {
                 //add key manually
                 preEditText[preEditLength++] = keyval;
-                //swprintf(preEditText, 100, L"%hs", keyval);
             }
             
             wprintf("preEditLength = %d, preEditText = %ls\n", preEditLength, preEditText);
-            
-            preEditAction = PREEDIT_ACTION_DRAW;
+            if (AtWordEnd == 1) {
+                preEditAction = PREEDIT_ACTION_COMMIT;
+            } else {
+                preEditAction = PREEDIT_ACTION_DRAW;
+            } 
             return;
         }
     }
     
-    if (preEditLength > 0) {
-        preEditAction = PREEDIT_ACTION_COMMIT_FORWARD;
+    if (keysym == XK_Shift_L || keysym == XK_Shift_R) {
+        preEditAction = PREEDIT_ACTION_NONE;
     } else {
-        preEditAction = PREEDIT_ACTION_FORWARD;
+        if (preEditLength > 0) {
+            preEditAction = PREEDIT_ACTION_COMMIT_FORWARD;
+        } else {
+            preEditAction = PREEDIT_ACTION_FORWARD;
+        }
     }
 }
 
@@ -145,7 +149,8 @@ void UnikeyInit() {
         preEditText = (wchar_t *)malloc(sizeof(wchar_t) * BUFFER_LENTH);
     }
     
-    UnikeySetup();  
+    UnikeySetup();
+    //UnikeySetInputMethod(UkVni);  
 }
 
 void UnikeyDestroy() {
