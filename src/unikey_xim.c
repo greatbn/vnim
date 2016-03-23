@@ -12,7 +12,7 @@ int getPreEditAction() {
         return PREEDIT_ACTION_START;
     }
     
-    if (preEditAction == PREEDIT_ACTION_HIDE && preEditShow == 1) {
+    if ((preEditAction == PREEDIT_ACTION_DISCARD || preEditAction == PREEDIT_ACTION_DISCARD_FORWARD) && preEditShow == 1) {
         preEditShow = 0;
     }
     
@@ -24,7 +24,7 @@ const char * getPreEditText() {
     return preEditText;
 }
 
-void processKey(unsigned char key) {
+void UnikeyProcessKey(unsigned char key, int keysym, int state) {
     if (preEditText == NULL) {
         preEditText = (char *)malloc(BUFFER_LENTH);
     }
@@ -37,7 +37,7 @@ void processKey(unsigned char key) {
     if (length > 4) {
         length = 0;
         //needCommit = 1;
-        preEditAction = PREEDIT_ACTION_HIDE;
+        preEditAction = PREEDIT_ACTION_COMMIT;
         return;
     }
     preEditAction = PREEDIT_ACTION_DRAW;
