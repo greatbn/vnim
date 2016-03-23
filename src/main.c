@@ -51,10 +51,10 @@ static XIMStyle Styles[] = {
 };
 
 /* Trigger Keys List */
-static XIMTriggerKey Trigger_Keys[] = {
-    {XK_space, ShiftMask, ShiftMask},
-    {0L, 0L, 0L}
-};
+// static XIMTriggerKey Trigger_Keys[] = {
+//     {XK_space, ShiftMask, ShiftMask},
+//     {0L, 0L, 0L}
+// };
 
 /* Conversion Keys List */
 static XIMTriggerKey Conversion_Keys[] = {
@@ -127,28 +127,28 @@ Bool MyDestroyICHandler(XIMS ims, IMChangeICStruct *call_data)
 }
 
 #define STRBUFLEN 64
-Bool IsKey(XIMS ims, IMForwardEventStruct *call_data, XIMTriggerKey *trigger)
-{
-    char strbuf[STRBUFLEN];
-    KeySym keysym;
-    int i;
-    int modifier;
-    int modifier_mask;
-    XKeyEvent *kev;
+// Bool IsKey(XIMS ims, IMForwardEventStruct *call_data, XIMTriggerKey *trigger)
+// {
+//     char strbuf[STRBUFLEN];
+//     KeySym keysym;
+//     int i;
+//     int modifier;
+//     int modifier_mask;
+//     XKeyEvent *kev;
 
-    memset(strbuf, 0, STRBUFLEN);
-    kev = (XKeyEvent*)&call_data->event;
-    XLookupString(kev, strbuf, STRBUFLEN, &keysym, NULL);
+//     memset(strbuf, 0, STRBUFLEN);
+//     kev = (XKeyEvent*)&call_data->event;
+//     XLookupString(kev, strbuf, STRBUFLEN, &keysym, NULL);
 
-    for (i = 0; trigger[i].keysym != 0; i++) {
-	modifier      = trigger[i].modifier;
-	modifier_mask = trigger[i].modifier_mask;
-	if (((KeySym)trigger[i].keysym == keysym)
-	    && ((kev->state & modifier_mask) == modifier))
-        return True;
-    }
-    return False;
-}
+//     for (i = 0; trigger[i].keysym != 0; i++) {
+// 	modifier      = trigger[i].modifier;
+// 	modifier_mask = trigger[i].modifier_mask;
+// 	if (((KeySym)trigger[i].keysym == keysym)
+// 	    && ((kev->state & modifier_mask) == modifier))
+//         return True;
+//     }
+//     return False;
+// }
 
 static void IMPreeditDraw (XIMS ims, IMForwardEventStruct *call_data, const char * buffer)
 {
@@ -271,38 +271,39 @@ Bool MyForwardEventHandler(XIMS ims, IMForwardEventStruct* call_data)
     	return True;
     }
 
-    if (IsKey(ims, call_data, Conversion_Keys)) {
-        XTextProperty tp;
-        Display *display = ims->core.display;
-        /* char *text = "�o�O�@�� IM ���A��������"; */
-        char *text = "���üy";
-        char **list_return; /* [20]; */
-        int count_return; /* [20]; */
+    // if (IsKey(ims, call_data, Conversion_Keys)) {
+    //     XTextProperty tp;
+    //     Display *display = ims->core.display;
+    //     /* char *text = "�o�O�@�� IM ���A��������"; */
+    //     char *text = "���üy";
+    //     char **list_return; /* [20]; */
+    //     int count_return; /* [20]; */
 
-        fprintf(stderr, "matching ctrl-k...\n");
-        XmbTextListToTextProperty(display, (char **)&text, 1,
-                    XCompoundTextStyle,
-                    &tp);
+    //     fprintf(stderr, "matching ctrl-k...\n");
+    //     XmbTextListToTextProperty(display, (char **)&text, 1,
+    //                 XCompoundTextStyle,
+    //                 &tp);
 
-        ((IMCommitStruct*)call_data)->flag |= XimLookupChars; 
-        ((IMCommitStruct*)call_data)->commit_string = (char *)tp.value;
-        fprintf(stderr, "commiting string...(%s)\n", tp.value);
-        IMCommitString(ims, (XPointer)call_data);
-    #if 0
-        XmbTextPropertyToTextList(display, &tp, &list_return, &count_return);
-        fprintf(stderr, "converted back: %s\n", *list_return);
-    #endif
-        XFree(tp.value); 
-        fprintf(stderr, "survived so far..\n");
-        }
-        else if (IsKey(ims, call_data, Forward_Keys)) {
-            IMForwardEventStruct forward_ev = *((IMForwardEventStruct *)call_data);
+    //     ((IMCommitStruct*)call_data)->flag |= XimLookupChars; 
+    //     ((IMCommitStruct*)call_data)->commit_string = (char *)tp.value;
+    //     fprintf(stderr, "commiting string...(%s)\n", tp.value);
+    //     IMCommitString(ims, (XPointer)call_data);
+    // #if 0
+    //     XmbTextPropertyToTextList(display, &tp, &list_return, &count_return);
+    //     fprintf(stderr, "converted back: %s\n", *list_return);
+    // #endif
+    //     XFree(tp.value); 
+    //     fprintf(stderr, "survived so far..\n");
+    //     }
+    //     else 
+    // if (IsKey(ims, call_data, Forward_Keys)) {
+    //     IMForwardEventStruct forward_ev = *((IMForwardEventStruct *)call_data);
 
-        fprintf(stderr, "TAB and RETURN forwarded...\n");
-        IMForwardEvent(ims, (XPointer)&forward_ev);
-    } else {
+    //     fprintf(stderr, "Imidiate forward \n");
+    //     IMForwardEvent(ims, call_data);
+    // } else {
     	ProcessKey(ims, call_data);
-    }
+    // }
     return True;
 }
 
@@ -399,9 +400,9 @@ char **argv;
     Display *dpy;
     char *imname = NULL;
     XIMS ims;
-    XIMStyles *input_styles, *styles2;
-    XIMTriggerKeys *on_keys, *trigger2;
-    XIMEncodings *encodings, *encoding2;
+    XIMStyles *input_styles/*, *styles2*/;
+    //XIMTriggerKeys *on_keys, *trigger2;
+    XIMEncodings *encodings/*, *encoding2*/;
     Window im_window;
     register int i;
     char transport[80];		/* enough */
@@ -457,13 +458,13 @@ char **argv;
     input_styles->count_styles = sizeof(Styles)/sizeof(XIMStyle) - 1;
     input_styles->supported_styles = Styles;
 
-    if ((on_keys = (XIMTriggerKeys *)
-	 malloc(sizeof(XIMTriggerKeys))) == NULL) {
-	    fprintf(stderr, "Can't allocate\n");
-	    exit(1);
-    }
-    on_keys->count_keys = sizeof(Trigger_Keys)/sizeof(XIMTriggerKey) - 1;
-    on_keys->keylist = Trigger_Keys;
+    // if ((on_keys = (XIMTriggerKeys *)
+	//  malloc(sizeof(XIMTriggerKeys))) == NULL) {
+	//     fprintf(stderr, "Can't allocate\n");
+	//     exit(1);
+    // }
+    // on_keys->count_keys = sizeof(Trigger_Keys)/sizeof(XIMTriggerKey) - 1;
+    // on_keys->keylist = Trigger_Keys;
 
     if ((encodings = (XIMEncodings *)malloc(sizeof(XIMEncodings))) == NULL) {
 	    fprintf(stderr, "Can't allocate\n");
