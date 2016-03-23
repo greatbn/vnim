@@ -126,7 +126,7 @@ Bool MyDestroyICHandler(XIMS ims, IMChangeICStruct *call_data)
     return True;
 }
 
-#define STRBUFLEN 64
+// #define STRBUFLEN 64
 // Bool IsKey(XIMS ims, IMForwardEventStruct *call_data, XIMTriggerKey *trigger)
 // {
 //     char strbuf[STRBUFLEN];
@@ -243,50 +243,47 @@ void IMPreeditCommit(XIMS ims, IMForwardEventStruct *call_data, const char *buff
     commitInfo.flag = XimLookupChars;
     commitInfo.commit_string = (char*)tp.value;
     IMCommitString(ims, (XPointer)&commitInfo);
+    
+    UnikeyCommitDone(); //callback
 }
 
 void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
 {
-    printf("ProcessKey\n");
-    char strbuf[STRBUFLEN];
-    KeySym keysym;
-    XKeyEvent *kev;
-    int count;
-
-    // fprintf(stderr, "Processing \n");
-    memset(strbuf, 0, STRBUFLEN);
-    kev = (XKeyEvent*)&call_data->event;
-    count = XLookupString(kev, strbuf, STRBUFLEN, &keysym, NULL);
-
-    if (count > 0) {
-	    fprintf(stdout, "[%s]\n", strbuf);
-        UnikeyProcessKey(strbuf[0], keysym, kev->state);
+    // if (count > 0) {
+	    // fprintf(stdout, "[%s]\n", strbuf);
+        UnikeyProcessKey((XKeyEvent*)&call_data->event);
+        
         switch (getPreEditAction()) {
-            case PREEDIT_ACTION_START:
-                //IMPreeditStart(ims, call_data);
             case PREEDIT_ACTION_DRAW:
+                printf("PREEDIT_ACTION_DRAW\n");
                 IMPreeditDraw(ims, call_data, getPreEditText());
                 break;
             case PREEDIT_ACTION_COMMIT:
+                printf("PREEDIT_ACTION_COMMIT\n");
                 IMPreeditCommit(ims, call_data, getPreEditText());
                 break;
             case PREEDIT_ACTION_DISCARD:
+                printf("PREEDIT_ACTION_DISCARD\n");
                 IMPreeditHide(ims, call_data);
                 break;
             case PREEDIT_ACTION_COMMIT_FORWARD:
+                printf("PREEDIT_ACTION_COMMIT_FORWARD\n");
                 IMPreeditCommit(ims, call_data, getPreEditText());
+                XSync(ims->core.display, False);
                 IMForwardEvent(ims, call_data);
                 break;
             case PREEDIT_ACTION_DISCARD_FORWARD:
+                printf("PREEDIT_ACTION_DISCARD_FORWARD\n");
                 IMPreeditHide(ims, call_data);
+                XSync(ims->core.display, False);
                 IMForwardEvent(ims, call_data);
                 break;
             default:
-                printf("This should not happen\n");
+                printf("no case defined, this should not happen\n");
         }
-    } else {
-        printf("this should not happen\n");
-    }
+    // } else {
+    //     printf("this should not happen\n");
+    // }
         
     XSync(ims->core.display, False);    
 }

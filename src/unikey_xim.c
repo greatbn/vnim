@@ -1,8 +1,15 @@
 #include <stddef.h>
+// #include <X11/Xlocale.h>
+// #include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <X11/keysym.h>
+// #include "IMdkit.h"
+    // #include <Xi18n.h>
 #include "unikey_xim.h"
 
 #define BUFFER_LENTH 1024
 static char * preEditText = NULL;
+static int preEditLength = 0;
 static int preEditAction = PREEDIT_ACTION_NONE;
 
 int getPreEditAction() {
@@ -14,21 +21,52 @@ const char * getPreEditText() {
     return preEditText;
 }
 
-void UnikeyProcessKey(unsigned char key, int keysym, int state) {
+#define STRBUFLEN 64
+void UnikeyProcessKey(XKeyEvent * keyEvent) {
     if (preEditText == NULL) {
         preEditText = (char *)malloc(BUFFER_LENTH);
     }
-    printf("processKey [%c]\n", key);
-    static int length = 0;
-    preEditText[length] = key;
-    length ++;
-    preEditText[length] = '\0';
-    printf("preedit text %s\n",preEditText);
-    if (length > 4) {
-        length = 0;
-        //needCommit = 1;
-        preEditAction = PREEDIT_ACTION_COMMIT;
+    
+    if ((keyEvent->state & ControlMask) == ControlMask) {
+        printf("special key, hot key\n");
+        preEditAction = PREEDIT_ACTION_COMMIT_FORWARD;
         return;
     }
-    preEditAction = PREEDIT_ACTION_DRAW;
+    
+    // printf("ProcessKey\n");
+    static char strbuf[STRBUFLEN];
+    KeySym keysym;
+    int count;
+
+    // fprintf(stderr, "Processing \n");
+    memset(strbuf, 0, STRBUFLEN);
+    count = XLookupString(keyEvent, strbuf, STRBUFLEN, &keysym, NULL);
+    printf("keysym = %d",keysym);
+    
+    if (count > 0) {
+        printf("processKey [%c]\n", strbuf[0]);
+        if (strbuf[0] >= ' ' && strbuf[0] <= '~' ) {
+            preEditText[preEditLength++] = strbuf[0];
+            preEditText[preEditLength] = '\0';
+            printf("preedit text %s\n",preEditText);
+            if (preEditLength > 4) {
+                preEditLength = 0;
+                //needCommit = 1;
+                preEditAction = PREEDIT_ACTION_COMMIT;
+                return;
+            }
+            preEditAction = PREEDIT_ACTION_DRAW;
+            return;
+        }
+    }
+    
+    if (preEditLength > 0) {
+        preEditAction = PREEDIT_ACTION_COMMIT_FORWARD;
+    } else {
+        preEditAction = PREEDIT_ACTION_DISCARD_FORWARD;
+    }
+}
+
+void UnikeyCommitDone() {
+    preEditText[preEditLength = 0] = 0;
 }
