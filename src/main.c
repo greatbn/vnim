@@ -168,7 +168,7 @@ static void IMPreeditDraw (XIMS ims, IMForwardEventStruct *call_data, const char
 
     unsigned int j, i, len;
     
-    static char feedback[128] = {0};
+    static XIMFeedback feedback[128] = {0};
 
     len = strlen(buffer);
     printf("len = %d\n", len);
@@ -187,7 +187,10 @@ static void IMPreeditDraw (XIMS ims, IMForwardEventStruct *call_data, const char
         feedback[i] = XIMUnderline;
     }
     feedback[len] = 0;
-    
+    // for (i = len; i < 128; i++) {
+    //     feedback[len] = 0;    
+    // }
+        
     text.feedback = feedback;
 
     if (len > 0) {

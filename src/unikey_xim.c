@@ -3,19 +3,9 @@
 
 #define BUFFER_LENTH 1024
 static char * preEditText = NULL;
-static int preEditShow = 0;
 static int preEditAction = PREEDIT_ACTION_NONE;
 
 int getPreEditAction() {
-    if (preEditAction == PREEDIT_ACTION_DRAW && preEditShow == 0) {
-        preEditShow = 1;
-        return PREEDIT_ACTION_START;
-    }
-    
-    if ((preEditAction == PREEDIT_ACTION_DISCARD || preEditAction == PREEDIT_ACTION_DISCARD_FORWARD) && preEditShow == 1) {
-        preEditShow = 0;
-    }
-    
     return preEditAction;  
 }
 
