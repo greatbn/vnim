@@ -10,6 +10,7 @@
 
 //ukengine
 #include "wchar.h"
+#include "charset.h"
 
 #define BUFFER_LENGTH 100
 
@@ -148,6 +149,15 @@ int VNIMCharTransform(VNChar* vnChar, UChar transform) {
     return NOTHING;
 }
 
+int VNIMProcessBackspace() {
+    if (sCurrentWord->length > 0){
+        sCurrentWord->length--;
+        return VNTrue;
+    } else {
+        return VNFalse;
+    }
+}
+
 int VNIMProcessKey(UChar keyCode, int capStatus) {
     printf("received [%c], capStatus = %d\n",keyCode, capStatus);
     keyCode = tolower(keyCode);
@@ -217,6 +227,62 @@ int VNIMProcessKey(UChar keyCode, int capStatus) {
     return VNFalse;    
 }
 
+wchar_t VNCharToWChar(VNChar* vnChar) {
+    if (vnChar->transform == CharTransform1){
+        if (vnChar->origin == VNCharA) {
+            if (vnChar->isUpper) {
+                return UnicodeVNCharset[VNCharA2Index];//L'Ă';
+            } else {
+                return UnicodeVNCharset[VNCharA2Index+1];//L'ă';
+            }
+        } 
+    } else if (vnChar->transform == CharTransform2) {
+        if (vnChar->origin == VNCharA) {
+            if (vnChar->isUpper) {
+                return UnicodeVNCharset[VNCharA1Index];//L'Â';
+            } else {
+                return UnicodeVNCharset[VNCharA1Index+1];//L'â';
+            }
+        }
+    }
+    
+    if (vnChar->isUpper) {
+        return toupper(vnChar->origin);
+    } else {
+        return vnChar->origin;        
+    }
+}
+
+int VNIMConvertWordToWChar(wchar_t* outBuffer, int outLength) {
+    outLength = sCurrentWord->length;
+    int needWordTransform = (VNTrue && (sCurrentWord->transform != WordTransformMax));
+    //process word first
+    int i, index;
+    for (i = 0; i < outLength; i++) {
+        outBuffer[i] = VNCharToWChar(&(sCurrentWord->chars[i]));
+    }
+    outBuffer[outLength] = 0;
+    
+    if (sCurrentWord->transform != WordTransformMax) {
+        for (i = outLength -1; i>=0; i--) {
+            if (sCurrentWord->chars[i].origin == VNCharA) {
+                index = VNCharAIndex;
+            }
+            if (needWordTransform) {
+                index = index + sCurrentWord->transform * 2;   
+            }
+            
+            if (! sCurrentWord->chars[i].isUpper) {
+                index = index + 1;
+            }
+            outBuffer[i] = UnicodeVNCharset[index];
+        }
+    }    
+    // for (i =0; i< sCurrentWord->length; i++) {
+    //     outBuffer[i] = sCurrentWord->chars[i].origin;
+    // }    
+}
+
 
 //testing
 static int preEditAction;
@@ -248,19 +314,34 @@ void UnikeyProcessKey(XKeyEvent * keyEvent) {
         return;
     }
     
+    if (keysym == XK_BackSpace && sCurrentWord->length > 0) {
+        printf("backspace pressed\n");
+        
+        //preediting
+        VNIMProcessBackspace();
+        
+        int i;
+        for (i =0; i< sCurrentWord->length; i++) {
+            preEditText[i] = sCurrentWord->chars[i].origin;
+        }
+        preEditText[sCurrentWord->length] = 0;        
+        
+        if (sCurrentWord->length > 0) {
+            preEditAction = PREEDIT_ACTION_DRAW;
+        } else {
+            preEditAction = PREEDIT_ACTION_DISCARD;
+        }
+        return;
+    }
     
     if (count > 0) {
         keyval = strbuf[0]; 
         if (keyval >= ' ' && keyval <= '~' ) {
             printf("processKey [%c]. shift %d, caplock %d\n", keyval, keyEvent->state & ShiftMask, keyEvent->state & LockMask);
-            int capStatus = ((keyEvent->state & ShiftMask) && (keyEvent->state & LockMask));
+            int capStatus = (((keyEvent->state & ShiftMask) != 0) != ((keyEvent->state & LockMask) !=0));
             int retVal = VNIMProcessKey(keyval, capStatus);
-            
-            int i;
-            for (i =0; i< sCurrentWord->length; i++) {
-                preEditText[i] = sCurrentWord->chars[i].origin;
-            }
-            preEditText[sCurrentWord->length] = 0;
+            int preEditLength;
+            VNIMConvertWordToWChar(preEditText, preEditLength);
             printf("assign done: %d\n",sCurrentWord->length);
             
             wprintf("preEditLength = %d, preEditText = %ls\n", sCurrentWord->length, preEditText);
