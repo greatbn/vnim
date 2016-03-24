@@ -11,6 +11,32 @@
 #include "unikey.h"
 #include "wchar.h"
 
+//charset output
+//#define CONV_CHARSET_UNICODE	0
+//#define CONV_CHARSET_UNIUTF8    1
+#define CONV_CHARSET_UNIREF     2  //&#D;
+#define CONV_CHARSET_UNIREF_HEX 3
+//#define CONV_CHARSET_UNIDECOMPOSED 4
+//#define CONV_CHARSET_WINCP1258	5
+#define CONV_CHARSET_UNI_CSTRING 6
+//#define CONV_CHARSET_VNSTANDARD 7
+
+#define CONV_CHARSET_VIQR		10
+//#define CONV_CHARSET_UTF8VIQR 11
+#define CONV_CHARSET_XUTF8  12
+
+#define CONV_CHARSET_TCVN3		20
+//#define CONV_CHARSET_VPS		21
+//#define CONV_CHARSET_VISCII		22
+//#define CONV_CHARSET_BKHCM1		23
+//#define CONV_CHARSET_VIETWAREF	24
+//#define CONV_CHARSET_ISC        25
+
+#define CONV_CHARSET_VNIWIN		40
+#define CONV_CHARSET_BKHCM2		41
+//#define CONV_CHARSET_VIETWAREX	42
+//#define CONV_CHARSET_VNIMAC		43
+
 #define BUFFER_LENTH 1024
 static wchar_t * preEditText = NULL;
 static int preEditLength = 0;
@@ -44,7 +70,18 @@ void handleEngineResult() {
     {
         UnikeyBuf[UnikeyBufChars] = 0;
         static wchar_t buffer[100];
-        int newLen = mbstowcs(buffer, UnikeyBuf, 100);
+        
+        int newLen;
+        
+        if (1) {
+            newLen = mbstowcs(buffer, UnikeyBuf, 100);  
+        }  else {
+            newLen = UnikeyBufChars;
+            for (newLen=0; newLen< UnikeyBufChars; newLen++) {
+                buffer[newLen] = UnikeyBuf[newLen];
+            }
+            buffer[newLen] = 0;
+        }
         printf("newLen = %d\n",newLen);
         if (newLen > 0) {
             wcsncpy((wchar_t*)(preEditText + preEditLength), buffer, newLen);
@@ -61,13 +98,6 @@ void handleEngineResult() {
 
 #define STRBUFLEN 64
 void UnikeyProcessKey(XKeyEvent * keyEvent) {
-    if ((keyEvent->state & ControlMask) == ControlMask) {
-        printf("special key, hot key\n");
-        preEditAction = PREEDIT_ACTION_FORWARD;
-        return;
-    }
-    
-    
     // printf("ProcessKey\n");
     static char strbuf[STRBUFLEN];
     static unsigned char keyval;
@@ -77,8 +107,24 @@ void UnikeyProcessKey(XKeyEvent * keyEvent) {
     // fprintf(stderr, "Processing \n");
     memset(strbuf, 0, STRBUFLEN);
     count = XLookupString(keyEvent, strbuf, STRBUFLEN, &keysym, NULL);
-    printf("keysym = %d, keycode = %d\n",keysym,keyEvent->keycode);
+    printf("keysym = %d, keycode = %d, modifiers = %d\n",keysym,keyEvent->keycode, keyEvent->state);    
     
+    if ((keyEvent->state & ControlMask) || (keyEvent->state & Mod1Mask)) {
+        printf("special key, hot key\n");
+        if ((keyEvent->state & ControlMask) && (keysym == XK_Shift_L)
+            || (keyEvent->state & Mod1Mask) && (keysym == XK_z) ){
+            engineEnabled = (engineEnabled == True)?False:True;
+            printf("engineEnabled: %d\n", engineEnabled); 
+        }
+        preEditAction = PREEDIT_ACTION_FORWARD;
+        return;
+    }
+    
+    if (engineEnabled == False) {
+        preEditAction = PREEDIT_ACTION_FORWARD;
+        return;        
+    }
+        
     if (keysym == XK_BackSpace && preEditLength > 0) {
         printf("backspace pressed\n");
         
@@ -151,6 +197,7 @@ void UnikeyInit() {
     
     UnikeySetup();
     //UnikeySetInputMethod(UkVni);
+    //UnikeySetOutputCharset(CONV_CHARSET_TCVN3);
     
     engineEnabled = True;  
 }

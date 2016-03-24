@@ -36,8 +36,8 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include "locales.h"
 #include "unikey_xim.h"
 
-#define DEFAULT_IMNAME "unikey"
-#define PROG_NAME "Unikey XIM"
+#define DEFAULT_IMNAME "vnim"
+#define PROG_NAME "Vietnam XIM"
 
 /* Supported Inputstyles */
 static XIMStyle Styles[] = {
