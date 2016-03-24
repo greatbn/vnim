@@ -50,8 +50,8 @@ static XIMStyle Styles[] = {
     0
 };
 
-IMForwardEventStruct pendingEvent;
-Bool isPending = False;
+// IMForwardEventStruct pendingEvent;
+// Bool isPending = False;
 
 // static XIMStyle Styles[] = {
 //     XIMPreeditCallbacks|XIMStatusCallbacks,
@@ -296,18 +296,19 @@ void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
         case PREEDIT_ACTION_COMMIT_FORWARD:
             printf("PREEDIT_ACTION_COMMIT_FORWARD %d\n",call_data->sync_bit);
             IMPreeditCommit(ims, call_data, getPreEditText());
-            IMSyncXlib(ims, (XPointer)call_data);
+            // IMSyncXlib(ims, (XPointer)call_data);
 // /            ims->sync =True;
-            isPending = True;
-            pendingEvent = (*call_data);
+            // isPending = True;
+            // pendingEvent = (*call_data);
             //int pending = XPending(ims->core.display);
-            //IMSyncXlib(ims, (XPointer)call_data);
+            IMSyncXlib(ims, (XPointer)call_data);
             //printf("pending = %d\n",pending);
             //XSync(ims->core.display, False);
-            //IMForwardEvent(ims, call_data);
+            IMForwardEvent(ims, call_data);
+            printf("fw done\n");
             break;
         case PREEDIT_ACTION_FORWARD:
-            printf("PREEDIT_ACTION_DISCARD_FORWARD\n");
+            printf("PREEDIT_ACTION_FORWARD\n");
             IMPreeditHide(ims, call_data);
 
             IMForwardEvent(ims, call_data);
@@ -428,11 +429,11 @@ Bool MyProtoHandler(XIMS ims, IMProtocol* call_data)
 	return MyPreeditCaretReplyHandler(ims, call_data);
         case XIM_SYNC_REPLY:
             printf("sync done\n");
-            if (isPending == True) {
-                isPending = False;
-                IMForwardEvent(ims, &pendingEvent);
-                printf("fw done\n");
-            }
+            // if (isPending == True) {
+            //     isPending = False;
+            //     IMForwardEvent(ims, &pendingEvent);
+            //     printf("fw done\n");
+            // }
             return True;
       default:
       //printf("testing\n");

@@ -1022,7 +1022,7 @@ static Status xi18n_commit (XIMS ims, XPointer xp)
                        total_size);
     FrameMgrFree (fm);
     XFree (reply);
-
+    
     return True;
 }
 
@@ -1142,6 +1142,16 @@ static int xi18n_syncXlib (XIMS ims, XPointer xp)
     /* input input-context ID */
     FrameMgrPutToken (fm, sync_xlib->icid);
     _Xi18nSendMessage (ims, connect_id, XIM_SYNC, 0, reply, total_size);
+    
+    // wait for reply
+    if (i18n_core->methods.wait (ims,
+                                 connect_id,
+                                 XIM_SYNC_REPLY,
+                                 0) == False)
+    {
+        printf("wait sync done\n");
+        return False;
+    }
 
     FrameMgrFree (fm);
     XFree(reply);

@@ -15,8 +15,12 @@
 static wchar_t * preEditText = NULL;
 static int preEditLength = 0;
 static int preEditAction = PREEDIT_ACTION_NONE;
+static Bool engineEnabled = False;
 
 int getPreEditAction() {
+    if (preEditAction == PREEDIT_ACTION_FORWARD && preEditLength > 0) {
+        return PREEDIT_ACTION_COMMIT_FORWARD;
+    }
     return preEditAction;  
 }
 
@@ -59,7 +63,7 @@ void handleEngineResult() {
 void UnikeyProcessKey(XKeyEvent * keyEvent) {
     if ((keyEvent->state & ControlMask) == ControlMask) {
         printf("special key, hot key\n");
-        preEditAction = PREEDIT_ACTION_COMMIT_FORWARD;
+        preEditAction = PREEDIT_ACTION_FORWARD;
         return;
     }
     
@@ -116,11 +120,7 @@ void UnikeyProcessKey(XKeyEvent * keyEvent) {
     if (keysym == XK_Shift_L || keysym == XK_Shift_R) {
         preEditAction = PREEDIT_ACTION_NONE;
     } else {
-        if (preEditLength > 0) {
-            preEditAction = PREEDIT_ACTION_COMMIT_FORWARD;
-        } else {
-            preEditAction = PREEDIT_ACTION_FORWARD;
-        }
+        preEditAction = PREEDIT_ACTION_FORWARD;
     }
 }
 
@@ -150,7 +150,9 @@ void UnikeyInit() {
     }
     
     UnikeySetup();
-    //UnikeySetInputMethod(UkVni);  
+    //UnikeySetInputMethod(UkVni);
+    
+    engineEnabled = True;  
 }
 
 void UnikeyDestroy() {
