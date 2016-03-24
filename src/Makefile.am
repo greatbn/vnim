@@ -3,6 +3,7 @@ unikey_xim_SOURCES = \
 	main.c \
     IC.c \
     vnim.c \
+    charset.c \
 	$(NULL)
     
 # A small trick to force G++ as a linker

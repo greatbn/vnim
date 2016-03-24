@@ -27,7 +27,7 @@
 #define VNCharS ('s')
 #define VNCharU ('u')
 #define VNCharW ('w')
-#define VNCharX ('X')
+#define VNCharX ('x')
 #define VNCharY ('y')
 #define VNCharZ ('z') 
 
