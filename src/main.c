@@ -40,24 +40,27 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #define PROG_NAME "Unikey XIM"
 
 /* Supported Inputstyles */
-// static XIMStyle Styles[] = {
-//     XIMPreeditPosition  | XIMStatusNothing,
-//     XIMPreeditCallbacks | XIMStatusNothing,
-//     XIMPreeditNothing   | XIMStatusNothing,
-//     XIMPreeditPosition  | XIMStatusCallbacks,
-//     XIMPreeditCallbacks | XIMStatusCallbacks,
-//     XIMPreeditNothing   | XIMStatusCallbacks,
-//     0
-// };
-
 static XIMStyle Styles[] = {
-    XIMPreeditCallbacks|XIMStatusCallbacks,
-    XIMPreeditPosition|XIMStatusArea,
-    XIMPreeditPosition|XIMStatusNothing,
-    XIMPreeditArea|XIMStatusArea,
-    XIMPreeditNothing|XIMStatusNothing,
+    XIMPreeditPosition  | XIMStatusNothing,
+    XIMPreeditCallbacks | XIMStatusNothing,
+    XIMPreeditNothing   | XIMStatusNothing,
+    XIMPreeditPosition  | XIMStatusCallbacks,
+    XIMPreeditCallbacks | XIMStatusCallbacks,
+    XIMPreeditNothing   | XIMStatusCallbacks,
     0
 };
+
+IMForwardEventStruct pendingEvent;
+Bool isPending = False;
+
+// static XIMStyle Styles[] = {
+//     XIMPreeditCallbacks|XIMStatusCallbacks,
+//     XIMPreeditPosition|XIMStatusArea,
+//     XIMPreeditPosition|XIMStatusNothing,
+//     XIMPreeditArea|XIMStatusArea,
+//     XIMPreeditNothing|XIMStatusNothing,
+//     0
+// };
 
 /* Trigger Keys List */
 // static XIMTriggerKey Trigger_Keys[] = {
@@ -209,7 +212,7 @@ static void IMPreeditDraw(XIMS ims, IMForwardEventStruct *call_data, const wchar
         XwcTextListToTextProperty (ims->core.display,
                                      (wchar_t **)&buffer,
                                      1, XCompoundTextStyle, &tp);
-        text.encoding_is_wchar = 0;
+        text.encoding_is_wchar = 1;
         text.length = strlen ((char*)tp.value);
         
         text.string.multi_byte = (char*)tp.value;
@@ -226,7 +229,7 @@ static void IMPreeditDraw(XIMS ims, IMForwardEventStruct *call_data, const wchar
         pcb.todo.draw.chg_length = last_len;
         pcb.todo.draw.text = &text;
                 
-        text.encoding_is_wchar = 0;
+        text.encoding_is_wchar = 1;
         text.length = 0;
         text.string.multi_byte = "";
         feedback[0] = 0;
@@ -250,6 +253,7 @@ void IMPreeditCommit(XIMS ims, IMForwardEventStruct *call_data, const wchar_t *b
 {
     //hide preedit text before doing commit
     IMPreeditHide(ims, call_data);
+//    ims->sync =True;
     
     IMCommitStruct commitInfo;
     XIMText text;
@@ -259,19 +263,25 @@ void IMPreeditCommit(XIMS ims, IMForwardEventStruct *call_data, const wchar_t *b
                                     (wchar_t **)&buffer,
                                     1, XCompoundTextStyle, &tp);    
     
-    *((IMAnyStruct *)&commitInfo) = *((IMAnyStruct *)call_data);
+    // *((IMAnyStruct *)&commitInfo) = *((IMAnyStruct *)call_data);
     commitInfo.major_code = XIM_COMMIT;
     commitInfo.icid = call_data->icid;
     commitInfo.connect_id = call_data->connect_id;
     commitInfo.flag = XimLookupChars;
-    commitInfo.commit_string = (char*)tp.value;
+    commitInfo.commit_string = (unsigned char*)tp.value;
+    // ((IMCommitStruct*)call_data)->flag |= XimLookupChars; 
+	// ((IMCommitStruct*)call_data)->commit_string = (unsigned char *)tp.value;
     IMCommitString(ims, (XPointer)&commitInfo);
+    
+    XFree (tp.value);
     
     UnikeyCommitDone(); //callback
 }
 
 void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
 {
+    //ims->sync =True;
+    //call_data->sync_bit = 1;
     UnikeyProcessKey((XKeyEvent*)&call_data->event);
     
     switch (getPreEditAction()) {
@@ -286,12 +296,20 @@ void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
         case PREEDIT_ACTION_COMMIT_FORWARD:
             printf("PREEDIT_ACTION_COMMIT_FORWARD %d\n",call_data->sync_bit);
             IMPreeditCommit(ims, call_data, getPreEditText());
+            IMSyncXlib(ims, (XPointer)call_data);
+// /            ims->sync =True;
+            isPending = True;
+            pendingEvent = (*call_data);
+            //int pending = XPending(ims->core.display);
+            //IMSyncXlib(ims, (XPointer)call_data);
+            //printf("pending = %d\n",pending);
             //XSync(ims->core.display, False);
-            IMForwardEvent(ims, call_data);
+            //IMForwardEvent(ims, call_data);
             break;
         case PREEDIT_ACTION_FORWARD:
             printf("PREEDIT_ACTION_DISCARD_FORWARD\n");
             IMPreeditHide(ims, call_data);
+
             IMForwardEvent(ims, call_data);
             break;
         case PREEDIT_ACTION_DISCARD:
@@ -410,6 +428,11 @@ Bool MyProtoHandler(XIMS ims, IMProtocol* call_data)
 	return MyPreeditCaretReplyHandler(ims, call_data);
         case XIM_SYNC_REPLY:
             printf("sync done\n");
+            if (isPending == True) {
+                isPending = False;
+                IMForwardEvent(ims, &pendingEvent);
+                printf("fw done\n");
+            }
             return True;
       default:
       //printf("testing\n");
