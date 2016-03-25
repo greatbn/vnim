@@ -13,7 +13,7 @@ void ViResetEngine();
 void ViInitEngine();
 void ViDestroyEngine();
 int ViProcessKey(UChar keyCode, int capStatus);
-int ViGetCurrentWord(wchar_t* outBuffer, int* outLength);
+void ViGetCurrentWord(wchar_t* outBuffer, int* outLength);
 int ViProcessBackspace();
 
 #endif //__VI_ENGINE_H__

@@ -1,6 +1,6 @@
-bin_PROGRAMS = test
-test_SOURCES = \
+noinst_LTLIBRARIES     = libvi-engine.la
+
+libvi_engine_la_SOURCES = \
     vi-engine.c \
     charset.c \
-    test.c \
-	$(NULL)
+    $(NULL)

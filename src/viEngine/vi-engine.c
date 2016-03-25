@@ -196,22 +196,30 @@ void ViDestroyEngine() {
     sCurrentWord = NULL;
 }
 
-int ViGetCurrentWord(wchar_t* outBuffer, int* outLength) {
+void ViGetCurrentWord(wchar_t* outBuffer, int* outLength) {
     (*outLength) = sCurrentWord->length;
-    int needWordTransform = (sCurrentWord->transform != WordTransform0);
-    UChar wordTransformShift = 0;
-    //process word first
-    int i, index;
-    for (i = (*outLength) - 1; i >= 0 ; i--) {
-        if (needWordTransform && ViIsVowel(sCurrentWord->chars[i].origin)) {
-            wordTransformShift = sCurrentWord->transform;
-            needWordTransform = 0;
-            outBuffer[i] = VNCharToWChar(&(sCurrentWord->chars[i]), wordTransformShift);
-        } else {
-            outBuffer[i] = VNCharToWChar(&(sCurrentWord->chars[i]), 0);
+    
+    if (sCurrentWord->length > 0) {
+        int needWordTransform = (sCurrentWord->transform != WordTransform0);
+        UChar wordTransformShift = 0;
+        //process word first
+        int i, index;
+        for (i = (*outLength) - 1; i >= 0 ; i--) {
+            if (needWordTransform && ViIsVowel(sCurrentWord->chars[i].origin)) {
+                wordTransformShift = sCurrentWord->transform;
+                needWordTransform = 0;
+                outBuffer[i] = VNCharToWChar(&(sCurrentWord->chars[i]), wordTransformShift);
+            } else {
+                outBuffer[i] = VNCharToWChar(&(sCurrentWord->chars[i]), 0);
+            }
+        }
+        
+        if (needWordTransform) {
+            //still need word transform?
+            sCurrentWord->transform = WordTransform0;
         }
     }
-    outBuffer[*outLength] = 0;    
+    outBuffer[*outLength] = 0;
 }
 
 int ViProcessKey(UChar keyCode, int capStatus) {

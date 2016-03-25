@@ -34,7 +34,7 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <IMdkit.h>
 #include <Xi18n.h>
 #include "locales.h"
-#include "unikey_xim.h"
+#include "wrapper.h"
 
 #define DEFAULT_IMNAME "vnim"
 #define PROG_NAME "Vietnam XIM"
@@ -275,14 +275,14 @@ void IMPreeditCommit(XIMS ims, IMForwardEventStruct *call_data, const wchar_t *b
     
     XFree (tp.value);
     
-    UnikeyCommitDone(); //callback
+    XIMCommitDone(); //callback
 }
 
 void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
 {
     //ims->sync =True;
     //call_data->sync_bit = 1;
-    UnikeyProcessKey((XKeyEvent*)&call_data->event);
+    XIMProcessKey((XKeyEvent*)&call_data->event);
     
     switch (getPreEditAction()) {
         case PREEDIT_ACTION_DRAW:
@@ -408,12 +408,12 @@ Bool MyProtoHandler(XIMS ims, IMProtocol* call_data)
 	return MyForwardEventHandler(ims, call_data);
       case XIM_SET_IC_FOCUS:
         fprintf(stderr, "XIM_SET_IC_FOCUS()\n");
-        UnikeyFocusIn();
+        XIMFocusIn();
 	    return True;
       case XIM_UNSET_IC_FOCUS:
         fprintf(stderr, "XIM_UNSET_IC_FOCUS:\n");
         IMPreeditCommit(ims, call_data, getPreEditText());
-        UnikeyFocusOut();
+        XIMFocusOut();
 	    return True;
       case XIM_RESET_IC:
         fprintf(stderr, "XIM_RESET_IC_FOCUS:\n");
@@ -546,7 +546,7 @@ char **argv;
     encodings->count_encodings = sizeof(SupportedEncodings)/sizeof(XIMEncoding) - 1;
     encodings->supported_encodings = SupportedEncodings;
     
-    UnikeyInit(); //init unikey
+    XIMInit(); //init unikey
 
     ims = IMOpenIM(dpy,
 		   IMModifiers, "Xi18n",
