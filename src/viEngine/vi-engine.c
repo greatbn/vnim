@@ -102,6 +102,21 @@ int ViIsATransformer(UChar keyCode) {
     return (ViIsCharTransformer(keyCode) || ViIsWordTransformer(keyCode));
 }
 
+void ViCorrection(VNWord* vnWord) {
+    int i;
+    for (i=1; i< vnWord->length; i++) {
+        VNChar* thisChar = &(vnWord->chars[i]);
+        VNChar* preChar = &(vnWord->chars[i-1]);
+        if (preChar->origin == VNCharU && thisChar->origin == VNCharO) {
+            if (preChar->transform == CharTransform1 || thisChar->transform == CharTransform2) {
+                preChar->transform = CharTransform1;
+                thisChar->transform = CharTransform2;
+                printf("Corrected UV\n");
+            } 
+        }
+    }
+}
+
 /*
  * Apend a character into a word
  */
@@ -114,7 +129,9 @@ int ViAppendWord(VNWord* vnWord, UChar keyCode, int capStatus) {
     VNChar* vnChar = &(vnWord->chars[vnWord->length++]);
     vnChar->origin = keyCode;
     vnChar->transform = CharTransform0;
-    vnChar->isUpper = capStatus?(VNTrue):(VNFalse);    
+    vnChar->isUpper = capStatus?(VNTrue):(VNFalse);
+    
+    ViCorrection(sCurrentWord);    
     return VNTrue;
 }
 
@@ -206,21 +223,6 @@ void ViDestroyEngine() {
     sCurrentWord = NULL;
 }
 
-void ViCorrection(VNWord* vnWord) {
-    int i;
-    for (i=1; i< vnWord->length; i++) {
-        VNChar* thisChar = &(vnWord->chars[i]);
-        VNChar* preChar = &(vnWord->chars[i-1]);
-        if (preChar->origin == VNCharU && thisChar->origin == VNCharO) {
-            if (preChar->transform == CharTransform1 || thisChar->transform == CharTransform2) {
-                preChar->transform = CharTransform1;
-                thisChar->transform = CharTransform2;
-                printf("Corrected UV\n");
-            } 
-        }
-    }
-}
-
 void ViGetCurrentWord(wchar_t* outBuffer, int* outLength) {
     (*outLength) = sCurrentWord->length;
     
@@ -296,7 +298,6 @@ int ViProcessKey(UChar keyCode, int capStatus) {
                             }
                         }  else if (retVal == PROCESSED) {
                             //transform done
-                            ViCorrection(sCurrentWord);
                             return VNTrue;
                         } //endif
                     } //endif
