@@ -1,12 +1,12 @@
 #ifndef __VNIM_PRIVATE_H__
 #define __VNIM_PRIVATE_H__
 
-#define CharTransform1 (0) //a(
-#define CharTransform2 (1) //a^, e^, o^
-#define CharTransform3 (2) //o*, u*
-#define CharTransform4 (3) //d+
-#define CharTransform5 (4) //w->u*
-#define CharTransformMax (5)
+#include "vi-engine.h"
+
+#define CharTransform0 (0) //
+#define CharTransform1 (1) //a^, e^, o^, d+, u*
+#define CharTransform2 (2) //a(, o*
+#define CharTransformMax (3)
 
 #define WordTransform0 (0) //z
 #define WordTransform1 (1) //s
@@ -29,20 +29,23 @@
 #define VNCharW ('w')
 #define VNCharX ('x')
 #define VNCharY ('y')
-#define VNCharZ ('z') 
+#define VNCharZ ('z')
 
-typedef unsigned char UChar;
-
-static const UChar TelexCharTransformIndex[][2] = {
-    {VNCharW, CharTransform1},   
-    {VNCharA, CharTransform2},   
-    {VNCharE, CharTransform2},
-    {VNCharO, CharTransform2},
-    {VNCharW, CharTransform3},
-    {VNCharD, CharTransform4},
-    {VNCharW, CharTransform5}
+static const UChar TelexCharTransformIndex[][3] = {
+    {VNCharA, CharTransform1, VNCharA},
+    {VNCharW, CharTransform2, VNCharA},   
+    {VNCharE, CharTransform1, VNCharE},   
+    {VNCharO, CharTransform1, VNCharO},
+    {VNCharW, CharTransform2, VNCharO},
+    {VNCharW, CharTransform1, VNCharU},
+    {VNCharD, CharTransform1, VNCharD},
 };
 static const int TelexCharTransformNumber = 7;
+
+static const UChar TelexCharConversionIndex[][2] = {
+    {VNCharW, VNCharU, CharTransform1}
+};
+static const int TelexCharConversionNumber = 1;
     
 static const UChar TelexWordTransformIndex[][2] = {    
     {VNCharS, WordTransform1},
@@ -66,8 +69,5 @@ typedef struct {
     UChar transform;
     int length;
 } VNWord;
-
-#define VNFalse (0)
-#define VNTrue (1)
 
  #endif //__VNIM_PRIVATE_H__

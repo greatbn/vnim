@@ -19,3 +19,15 @@ const int UnicodeVNCharset[] =
      0x0059, 0x0079, 0x00dd, 0x00fd, 0x1ef2, 0x1ef3, 0x1ef6, 0x1ef7, 0x1ef8, 0x1ef9, 0x1ef4, 0x1ef5, //y
      0x005a, 0x007a,                                                                                // Z z
 };
+
+const unsigned char CharSetIndex[][2] = {
+      {'a',0},
+      {'d',40},
+      {'e',44},
+      {'i',74},
+      {'o',96},
+      {'u',142},
+      {'y',172},
+};
+
+const int CharSetIndexMax = 7;

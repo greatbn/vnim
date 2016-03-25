@@ -15,6 +15,7 @@ AC_CONFIG_FILES(
 	src/Makefile
     src/IMdkit/Makefile
     src/ukengine/Makefile
+    src/viEngine/Makefile
 )
 AC_OUTPUT
 

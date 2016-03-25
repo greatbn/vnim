@@ -2,8 +2,7 @@ bin_PROGRAMS = unikey-xim
 unikey_xim_SOURCES = \
 	main.c \
     IC.c \
-    vnim.c \
-    charset.c \
+    unikey-xim.c \
 	$(NULL)
     
 # A small trick to force G++ as a linker
