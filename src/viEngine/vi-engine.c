@@ -206,6 +206,21 @@ void ViDestroyEngine() {
     sCurrentWord = NULL;
 }
 
+void ViCorrection(VNWord* vnWord) {
+    int i;
+    for (i=1; i< vnWord->length; i++) {
+        VNChar* thisChar = &(vnWord->chars[i]);
+        VNChar* preChar = &(vnWord->chars[i-1]);
+        if (preChar->origin == VNCharU && thisChar->origin == VNCharO) {
+            if (preChar->transform == CharTransform1 || thisChar->transform == CharTransform2) {
+                preChar->transform = CharTransform1;
+                thisChar->transform = CharTransform2;
+                printf("Corrected UV\n");
+            } 
+        }
+    }
+}
+
 void ViGetCurrentWord(wchar_t* outBuffer, int* outLength) {
     (*outLength) = sCurrentWord->length;
     
@@ -222,17 +237,23 @@ void ViGetCurrentWord(wchar_t* outBuffer, int* outLength) {
                 if (i > 0 && ViIsVowel(sCurrentWord->chars[i-1].origin)) {
                     wordTransformShift = 0; 
                     
-                    if ((i + 1< (*outLength)) && ViIsVowel(sCurrentWord->chars[i+1].origin)) {
+                    if (i + 1< (*outLength)) {
                         wordTransformShift = sCurrentWord->transform;
                     }
                     
+                    //GI
                     if (i > 1 && sCurrentWord->chars[i-2].origin == VNCharG && sCurrentWord->chars[i-1].origin == VNCharI) {
                         wordTransformShift = sCurrentWord->transform;
                     }
                     
-                    if (i > 1 && sCurrentWord->chars[i-1].origin == VNCharY) {
+                    //QU
+                    if (i > 1 && sCurrentWord->chars[i-2].origin == VNCharQ && sCurrentWord->chars[i-1].origin == VNCharU) {
                         wordTransformShift = sCurrentWord->transform;
                     }
+                    
+                    // if (i > 1 && sCurrentWord->chars[i-1].origin == VNCharY) {
+                    //     wordTransformShift = sCurrentWord->transform;
+                    // }
                 }
                 if (wordTransformShift > 0) {
                     needWordTransform = VNFalse; //word is transformed
@@ -275,6 +296,7 @@ int ViProcessKey(UChar keyCode, int capStatus) {
                             }
                         }  else if (retVal == PROCESSED) {
                             //transform done
+                            ViCorrection(sCurrentWord);
                             return VNTrue;
                         } //endif
                     } //endif

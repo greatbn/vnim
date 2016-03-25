@@ -24,6 +24,7 @@
 #define VNCharI ('i')
 #define VNCharJ ('j')
 #define VNCharO ('o')
+#define VNCharQ ('q')
 #define VNCharR ('r')
 #define VNCharS ('s')
 #define VNCharU ('u')
