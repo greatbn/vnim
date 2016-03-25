@@ -6,7 +6,7 @@ unikey_xim_SOURCES = \
 	$(NULL)
     
 # A small trick to force G++ as a linker
-nodist_EXTRA_unikey_xim_SOURCES = dummy.cpp    
+#nodist_EXTRA_unikey_xim_SOURCES = dummy.cpp    
     
 unikey_xim_LDADD = \
 	$(top_srcdir)/src/IMdkit/libIMdkit.la \

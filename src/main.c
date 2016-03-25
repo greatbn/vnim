@@ -279,23 +279,19 @@ void IMPreeditCommit(XIMS ims, IMForwardEventStruct *call_data, const wchar_t *b
 }
 
 void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
-{
-    //ims->sync =True;
-    //call_data->sync_bit = 1;
-    XIMProcessKey((XKeyEvent*)&call_data->event);
-    
-    switch (getPreEditAction()) {
+{    
+    switch (XIMProcessKey((XKeyEvent*)&call_data->event)) {
         case PREEDIT_ACTION_DRAW:
             printf("PREEDIT_ACTION_DRAW\n");
-            IMPreeditDraw(ims, call_data, getPreEditText());
+            IMPreeditDraw(ims, call_data, XIMGetPreeditText());
             break;
         case PREEDIT_ACTION_COMMIT:
             printf("PREEDIT_ACTION_COMMIT\n");
-            IMPreeditCommit(ims, call_data, getPreEditText());
+            IMPreeditCommit(ims, call_data, XIMGetPreeditText());
             break;
         case PREEDIT_ACTION_COMMIT_FORWARD:
             printf("PREEDIT_ACTION_COMMIT_FORWARD %d\n",call_data->sync_bit);
-            IMPreeditCommit(ims, call_data, getPreEditText());
+            IMPreeditCommit(ims, call_data, XIMGetPreeditText());
             // IMSyncXlib(ims, (XPointer)call_data);
 // /            ims->sync =True;
             // isPending = True;
@@ -412,7 +408,7 @@ Bool MyProtoHandler(XIMS ims, IMProtocol* call_data)
 	    return True;
       case XIM_UNSET_IC_FOCUS:
         fprintf(stderr, "XIM_UNSET_IC_FOCUS:\n");
-        IMPreeditCommit(ims, call_data, getPreEditText());
+        IMPreeditCommit(ims, call_data, XIMGetPreeditText());
         XIMFocusOut();
 	    return True;
       case XIM_RESET_IC:

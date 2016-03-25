@@ -1,7 +1,6 @@
 AC_INIT([Tutorial Program], 1.0)
 AM_INIT_AUTOMAKE([subdir-objects])
 AC_PROG_CC
-AC_PROG_CXX
 LT_INIT
 
 # Check for x11
@@ -14,7 +13,6 @@ AC_CONFIG_FILES(
 	Makefile
 	src/Makefile
     src/IMdkit/Makefile
-    src/ukengine/Makefile
     src/viEngine/Makefile
 )
 AC_OUTPUT
