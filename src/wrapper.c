@@ -68,7 +68,7 @@ int XIMProcessKey(XKeyEvent * keyEvent) {
         keyval = strbuf[0]; 
         if (keyval > ' ' && keyval <= '~' ) {
             printf("processKey [%c]. shift %d, caplock %d\n", keyval, keyEvent->state & ShiftMask, keyEvent->state & LockMask);
-            if (ViProcessKey(keyval, (keyEvent->state & ShiftMask == 0) != (keyEvent->state & LockMask == 0))){
+            if (ViProcessKey(keyval, ((keyEvent->state & ShiftMask) > 0) != ((keyEvent->state & LockMask) > 0))){
                 ViGetCurrentWord(preEditText, &preEditLength);
                 return PREEDIT_ACTION_DRAW;
             }                        

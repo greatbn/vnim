@@ -45,6 +45,16 @@ int ViIsVowel(UChar keyCode) {
     );
 }
 
+int ViCanTransformWord(VNWord* vnWord) {
+    int i;
+    for (i = 0; i < vnWord->length; i++) {
+        if (ViIsVowel(vnWord->chars[i].origin)) {
+            return VNTrue;
+        }
+    }
+    return VNFalse;
+}
+
 /**
  * Check if this is a latin character or not
  */
@@ -205,13 +215,30 @@ void ViGetCurrentWord(wchar_t* outBuffer, int* outLength) {
         //process word first
         int i, index;
         for (i = (*outLength) - 1; i >= 0 ; i--) {
+            wordTransformShift = 0;
             if (needWordTransform && ViIsVowel(sCurrentWord->chars[i].origin)) {
                 wordTransformShift = sCurrentWord->transform;
-                needWordTransform = 0;
-                outBuffer[i] = VNCharToWChar(&(sCurrentWord->chars[i]), wordTransformShift);
-            } else {
-                outBuffer[i] = VNCharToWChar(&(sCurrentWord->chars[i]), 0);
+                printf("adding dau\n");
+                if (i > 0 && ViIsVowel(sCurrentWord->chars[i-1].origin)) {
+                    wordTransformShift = 0; 
+                    
+                    if ((i + 1< (*outLength)) && ViIsVowel(sCurrentWord->chars[i+1].origin)) {
+                        wordTransformShift = sCurrentWord->transform;
+                    }
+                    
+                    if (i > 1 && sCurrentWord->chars[i-2].origin == VNCharG && sCurrentWord->chars[i-1].origin == VNCharI) {
+                        wordTransformShift = sCurrentWord->transform;
+                    }
+                    
+                    if (i > 1 && sCurrentWord->chars[i-1].origin == VNCharY) {
+                        wordTransformShift = sCurrentWord->transform;
+                    }
+                }
+                if (wordTransformShift > 0) {
+                    needWordTransform = VNFalse; //word is transformed
+                }
             }
+            outBuffer[i] = VNCharToWChar(&(sCurrentWord->chars[i]), wordTransformShift);
         }
         
         if (needWordTransform) {
@@ -254,15 +281,7 @@ int ViProcessKey(UChar keyCode, int capStatus) {
                 } //endfor
             } //endif
         } //endfor
-        
-        // //still cannot transform, check for w-> u*
-        // for (i = 0; i < sCharTransformNumber; i++) {
-        //     if (sCharTransformIndex[i][0] == keyCode && sCharTransformIndex[i][1] == CharTransform5) {
-        //         VNIMAppendWord(sCurrentWord, VNCharU, capStatus);
-        //         return VNTrue;   
-        //     }
-        // } //endfor
-    } else if (ViIsWordTransformer(keyCode)) {
+    } else if (ViIsWordTransformer(keyCode) && ViCanTransformWord(sCurrentWord)) {
         for (i = 0; i < sWordTransformNumber; i++) {
             if (sWordTransformIndex[i][0] == keyCode) {
                 if (sCurrentWord->transform == sWordTransformIndex[i][1]) {
@@ -294,6 +313,9 @@ int ViProcessKey(UChar keyCode, int capStatus) {
 int ViProcessBackspace() {
     if (sCurrentWord->length > 0){
         sCurrentWord->length--;
+        if (sCurrentWord->transform != WordTransform0 && (!ViCanTransformWord(sCurrentWord))){
+            sCurrentWord->transform = WordTransform0;
+        }
         return VNTrue;
     } else {
         return VNFalse;

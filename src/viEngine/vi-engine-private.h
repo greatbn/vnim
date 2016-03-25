@@ -20,6 +20,7 @@
 #define VNCharD ('d')
 #define VNCharE ('e')
 #define VNCharF ('f')
+#define VNCharG ('g')
 #define VNCharI ('i')
 #define VNCharJ ('j')
 #define VNCharO ('o')
