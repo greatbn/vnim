@@ -168,7 +168,7 @@ static void IMPreeditDraw(XIMS ims, IMForwardEventStruct *call_data, const wchar
     static int last_len = 0;
     if (gIsPreeditShowing == False) {
         printf("IMPreeditShow\n");
-        IMPreeditStart(ims, call_data);
+        IMPreeditStart(ims, (XPointer)call_data);
         gIsPreeditShowing = True;
         last_len = 0;
     }
@@ -181,7 +181,6 @@ static void IMPreeditDraw(XIMS ims, IMForwardEventStruct *call_data, const wchar
     if (buffer != NULL) {
     
         printf("IMPreeditDraw\n");
-        IMPreeditCBStruct pcb;
         XIMText text;
         XTextProperty tp;
 
@@ -212,12 +211,12 @@ static void IMPreeditDraw(XIMS ims, IMForwardEventStruct *call_data, const wchar
         XwcTextListToTextProperty (ims->core.display,
                                      (wchar_t **)&buffer,
                                      1, XCompoundTextStyle, &tp);
-        text.encoding_is_wchar = 1;
+        text.encoding_is_wchar = 0;
         text.length = strlen ((char*)tp.value);
         
         text.string.multi_byte = (char*)tp.value;
         printf("length = %d %s\n",text.length, text.string.multi_byte);
-        IMCallCallback (ims, (XPointer) & pcb);
+        IMCallCallback (ims, (XPointer) &pcb);
         XFree (tp.value);
     } else {
         printf("draw nothing\n");
@@ -229,13 +228,13 @@ static void IMPreeditDraw(XIMS ims, IMForwardEventStruct *call_data, const wchar
         pcb.todo.draw.chg_length = last_len;
         pcb.todo.draw.text = &text;
                 
-        text.encoding_is_wchar = 1;
+        text.encoding_is_wchar = 0;
         text.length = 0;
         text.string.multi_byte = "";
         feedback[0] = 0;
         text.feedback = feedback;
                 
-        IMCallCallback (ims, (XPointer) & pcb);
+        IMCallCallback (ims, (XPointer) &pcb);
         last_len = 0;
     }
 }
@@ -252,10 +251,9 @@ static void IMPreeditHide (XIMS ims, IMForwardEventStruct *call_data) {
 void IMPreeditCommit(XIMS ims, IMForwardEventStruct *call_data, const wchar_t *buffer)
 {
     //hide preedit text before doing commit
-    IMPreeditHide(ims, call_data);
+        IMPreeditHide(ims, call_data);
 //    ims->sync =True;
-    
-    IMCommitStruct commitInfo;
+    IMCommitStruct* commitInfo = (IMCommitStruct*)call_data;
     XIMText text;
     XTextProperty tp;
     
@@ -264,14 +262,14 @@ void IMPreeditCommit(XIMS ims, IMForwardEventStruct *call_data, const wchar_t *b
                                     1, XCompoundTextStyle, &tp);    
     
     // *((IMAnyStruct *)&commitInfo) = *((IMAnyStruct *)call_data);
-    commitInfo.major_code = XIM_COMMIT;
-    commitInfo.icid = call_data->icid;
-    commitInfo.connect_id = call_data->connect_id;
-    commitInfo.flag = XimLookupChars;
-    commitInfo.commit_string = (unsigned char*)tp.value;
+    //commitInfo.major_code = XIM_COMMIT;
+    //commitInfo.icid = call_data->icid;
+    //commitInfo.connect_id = call_data->connect_id;
+    commitInfo->flag |= XimLookupChars;
+    commitInfo->commit_string = (unsigned char*)tp.value;
     // ((IMCommitStruct*)call_data)->flag |= XimLookupChars; 
 	// ((IMCommitStruct*)call_data)->commit_string = (unsigned char *)tp.value;
-    IMCommitString(ims, (XPointer)&commitInfo);
+    IMCommitString(ims, (XPointer)commitInfo);
     
     XFree (tp.value);
     

@@ -95,7 +95,8 @@ void XIMFocusIn() {
 
 void XIMFocusOut() {
     printf("Focus out\n");
-    ViResetEngine();
+    //ViResetEngine();
+    XIMCommitDone();
 }
 
 void XIMInit() {
