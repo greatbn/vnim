@@ -282,10 +282,10 @@ int ViProcessKey(UChar keyCode, int capStatus) {
     
     // a char transformer?
     if (ViIsCharTransformer(keyCode)) {
-        for (i = sCurrentWord->length-1; i>=0; i--) {
-            printf("checking %d\n",i);
-            if (ViCanTransform(&(sCurrentWord->chars[i]))) {
-                for (j = 0; j < sCharTransformNumber; j++ ) {
+        for (j = 0; j < sCharTransformNumber; j++ ) {
+            for (i = sCurrentWord->length-1; i>=0; i--) {
+                printf("checking %d\n",i);
+                if (ViCanTransform(&(sCurrentWord->chars[i]))) {
                     if (sCharTransformIndex[j][0] == keyCode) {
                         int retVal = VNIMCharTransform(&(sCurrentWord->chars[i]), sCharTransformIndex[j]);
                         if (retVal == REVERTED) {

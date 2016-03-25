@@ -34,12 +34,12 @@
 #define VNCharZ ('z')
 
 static const UChar TelexCharTransformIndex[][3] = {
-    {VNCharA, CharTransform1, VNCharA},
-    {VNCharW, CharTransform2, VNCharA},   
-    {VNCharE, CharTransform1, VNCharE},   
-    {VNCharO, CharTransform1, VNCharO},
     {VNCharW, CharTransform2, VNCharO},
     {VNCharW, CharTransform1, VNCharU},
+    {VNCharW, CharTransform2, VNCharA},
+    {VNCharA, CharTransform1, VNCharA},
+    {VNCharE, CharTransform1, VNCharE},   
+    {VNCharO, CharTransform1, VNCharO},
     {VNCharD, CharTransform1, VNCharD},
 };
 static const int TelexCharTransformNumber = 7;
