@@ -6,11 +6,14 @@
 typedef unsigned char UChar;
 #define VNFalse (0)
 #define VNTrue (1)
+/**
+ Reset the engine
+*/
+void ViResetEngine();
+void ViInitEngine();
+void ViDestroyEngine();
+int ViProcessKey(UChar keyCode, int capStatus);
+int ViGetCurrentWord(wchar_t* outBuffer, int* outLength);
+int ViProcessBackspace();
 
-void VNIMResetWord();
-void VNIMInitVNIM();
-void VNIMDestroyVNIM();
-int VNIMProcessKey(UChar keyCode, int capStatus);
-int VNIMConvertWordToWChar(wchar_t* outBuffer, int* outLength);
-
- #endif //__VI_ENGINE_H__
+#endif //__VI_ENGINE_H__

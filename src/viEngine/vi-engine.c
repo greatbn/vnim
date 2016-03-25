@@ -17,28 +17,11 @@ static int sWordTransformNumber;
 static UChar (*sCharTransformIndex)[3];
 static int sCharTransformNumber;
 
-void VNIMResetWord() {
-    sCurrentWord->length = 0;
-    sCurrentWord->transform = WordTransform0;
-}
-
-void VNIMInitVNIM() {
-    printf("VNIMInitVNIM\n");
-    sCurrentWord = (VNWord*)malloc(sizeof(VNWord));
-    VNIMResetWord();
-    
-    sWordTransformIndex =TelexWordTransformIndex;
-    sWordTransformNumber = TelexWordTransformNumber;
-    sCharTransformIndex = TelexCharTransformIndex;
-    sCharTransformNumber = TelexCharTransformNumber;
-}
-
-void VNIMDestroyVNIM() {
-    free(sCurrentWord);
-    sCurrentWord = NULL;
-}
-
-int VNIMCanTransform(VNChar* vnChar) {
+//private methods
+/**
+ * Check if we can transform this character
+ */
+int ViCanTransform(VNChar* vnChar) {
     return (
         vnChar->origin == VNCharA
         || vnChar->origin == VNCharD
@@ -48,7 +31,10 @@ int VNIMCanTransform(VNChar* vnChar) {
     );
 }
 
-int VEIsVowel(UChar keyCode) {
+/**
+ * Check if a character is a vowel or not
+ */
+int ViIsVowel(UChar keyCode) {
     return (
         keyCode == VNCharA
         || keyCode == VNCharE
@@ -59,7 +45,10 @@ int VEIsVowel(UChar keyCode) {
     );
 }
 
-int VNIMIsVNChar(UChar keyCode) {
+/**
+ * Check if this is a latin character or not
+ */
+int ViIsLatinChar(UChar keyCode) {
     if (keyCode >= VNCharA && keyCode <= VNCharZ) {
         return VNTrue;
     } else {
@@ -68,8 +57,10 @@ int VNIMIsVNChar(UChar keyCode) {
     }
 }
 
-int VNIMIsCharTransformer(UChar keyCode) {
-    printf("VNIMIsCharTransformer\n");
+/**
+ * Check if this character can be used to transform other characters
+ */
+int ViIsCharTransformer(UChar keyCode) {
     int i;
     for (i = 0; i < sCharTransformNumber; i++) {
         // printf("checking char index %d\n",i);
@@ -81,8 +72,10 @@ int VNIMIsCharTransformer(UChar keyCode) {
     return VNFalse;
 }
 
-int VNIMIsWordTransformer(UChar keyCode) {
-    printf("VNIMIsWordTransformer\n");
+/*
+ * Check if this character can be used to transform a word
+ */
+int ViIsWordTransformer(UChar keyCode) {
     int i;
     for (i = 0; i < sWordTransformNumber; i++) {
         if (sWordTransformIndex[i][0] == keyCode) {
@@ -91,15 +84,20 @@ int VNIMIsWordTransformer(UChar keyCode) {
     }     
 }
 
-int VNIMIsATransformer(UChar keyCode) {
+/*
+ * Check if this can be used to transform
+ */
+int ViIsATransformer(UChar keyCode) {
     //check if this keyCode is in the transformIndex
-    return (VNIMIsCharTransformer(keyCode) || VNIMIsWordTransformer(keyCode));
+    return (ViIsCharTransformer(keyCode) || ViIsWordTransformer(keyCode));
 }
 
-int VNIMAppendWord(VNWord* vnWord, UChar keyCode, int capStatus) {
-    printf("VNIMAppendWord\n");
-    if ((! VNIMIsVNChar(keyCode)) || (vnWord->length > 8)) {
-        printf("why return false?\n");
+/*
+ * Apend a character into a word
+ */
+int ViAppendWord(VNWord* vnWord, UChar keyCode, int capStatus) {
+    printf("ViAppendWord [%c]\n", keyCode);
+    if ((! ViIsLatinChar(keyCode)) || (vnWord->length >= WORD_MAX_LENGTH)) {
         return VNFalse;
     }
     
@@ -110,10 +108,16 @@ int VNIMAppendWord(VNWord* vnWord, UChar keyCode, int capStatus) {
     return VNTrue;
 }
 
-int VNIMProcessable(UChar keyCode) {
-    return (VNIMIsVNChar(keyCode) || VNIMIsATransformer(keyCode));        
+/**
+ * Check if can handle this key or not
+ */
+int ViProcessable(UChar keyCode) {
+    return (ViIsLatinChar(keyCode) || ViIsATransformer(keyCode));        
 }
 
+/*
+ * Do transform a character
+ */
 int VNIMCharTransform(VNChar* vnChar, UChar transformInfo[3]) {
     if (transformInfo[2] != vnChar->origin) {
         //transform char does not match
@@ -121,29 +125,99 @@ int VNIMCharTransform(VNChar* vnChar, UChar transformInfo[3]) {
     }
     
     if (vnChar->transform == transformInfo[1]) {
-        //revert
+        //revert since this transform is already used
         vnChar->transform = CharTransform0;
         return REVERTED;
     } else {
+        //do a transform overridely
         vnChar->transform = transformInfo[1];
         return PROCESSED;
     }    
 }
 
-int VNIMProcessBackspace() {
-    if (sCurrentWord->length > 0){
-        sCurrentWord->length--;
-        return VNTrue;
+/*
+ * find charset index of a character
+ * return -1 if cannot find any
+ */
+int ViFindCharsetIndex(UChar keyCode) {
+    int i;
+    for (i = 0; i < CharSetIndexMax; i++) {
+        if (CharSetIndex[i][0] == keyCode) {
+            return CharSetIndex[i][1];
+        }
+    }
+    return -1;
+}
+
+/*
+ * Convert a VNChar -> a widechar (UTF8)
+ */
+wchar_t VNCharToWChar(VNChar* vnChar, UChar wordTransformShift) {
+    int index = ViFindCharsetIndex(vnChar->origin);
+    if (index >= 0) {
+        if (vnChar->origin == VNCharD) {
+            index += vnChar->transform * 2;
+        } else {
+            index += vnChar->transform * 12;
+            index += wordTransformShift * 2;
+        }
+        if (! vnChar->isUpper) {
+            index += 1;
+        }
+        return (wchar_t)UnicodeVNCharset[index];            
+    }
+
+    if (vnChar->isUpper) {
+        return (wchar_t)toupper(vnChar->origin);
     } else {
-        return VNFalse;
+        return (wchar_t)vnChar->origin;        
     }
 }
 
-int VNIMProcessKey(UChar keyCode, int capStatus) {
+//public methods
+void ViResetEngine() {
+    sCurrentWord->length = 0;
+    sCurrentWord->transform = WordTransform0;
+}
+
+void ViInitEngine() {
+    printf("VNIMInitVNIM\n");
+    sCurrentWord = (VNWord*)malloc(sizeof(VNWord));
+    ViResetEngine();
+    
+    sWordTransformIndex =TelexWordTransformIndex;
+    sWordTransformNumber = TelexWordTransformNumber;
+    sCharTransformIndex = TelexCharTransformIndex;
+    sCharTransformNumber = TelexCharTransformNumber;
+}
+
+void ViDestroyEngine() {
+    free(sCurrentWord);
+    sCurrentWord = NULL;
+}
+
+int ViGetCurrentWord(wchar_t* outBuffer, int* outLength) {
+    (*outLength) = sCurrentWord->length;
+    int needWordTransform = (sCurrentWord->transform != WordTransform0);
+    UChar wordTransformShift = 0;
+    //process word first
+    int i, index;
+    for (i = (*outLength) - 1; i >= 0 ; i--) {
+        if (needWordTransform && ViIsVowel(sCurrentWord->chars[i].origin)) {
+            wordTransformShift = sCurrentWord->transform;
+            needWordTransform = 0;
+            outBuffer[i] = VNCharToWChar(&(sCurrentWord->chars[i]), wordTransformShift);
+        } else {
+            outBuffer[i] = VNCharToWChar(&(sCurrentWord->chars[i]), 0);
+        }
+    }
+    outBuffer[*outLength] = 0;    
+}
+
+int ViProcessKey(UChar keyCode, int capStatus) {
     printf("received [%c], capStatus = %d\n",keyCode, capStatus);
     keyCode = tolower(keyCode);
-    printf("processing [%c]\n", keyCode);
-    if (! VNIMProcessable(keyCode)) {
+    if (! ViProcessable(keyCode)) {
         return VNFalse; 
     }
     
@@ -151,28 +225,26 @@ int VNIMProcessKey(UChar keyCode, int capStatus) {
     int i,j;
     
     // a char transformer?
-    if (VNIMIsCharTransformer(keyCode)) {
+    if (ViIsCharTransformer(keyCode)) {
         for (i = sCurrentWord->length-1; i>=0; i--) {
             printf("checking %d\n",i);
-            if (VNIMCanTransform(&(sCurrentWord->chars[i]))) {
+            if (ViCanTransform(&(sCurrentWord->chars[i]))) {
                 for (j = 0; j < sCharTransformNumber; j++ ) {
                     if (sCharTransformIndex[j][0] == keyCode) {
                         int retVal = VNIMCharTransform(&(sCurrentWord->chars[i]), sCharTransformIndex[j]);
                         if (retVal == REVERTED) {
-                            if (VNIMAppendWord(sCurrentWord, keyCode, capStatus)) {                               
+                            if (ViAppendWord(sCurrentWord, keyCode, capStatus)) {                               
                                 return VNTrue;
                             } else {
                                 return VNFalse;
                             }
                         }  else if (retVal == PROCESSED) {
                             //transform done
-                            return VNTrue;                        
-                        } else {
-                            
-                        }
-                    }                
-                }            
-            }
+                            return VNTrue;
+                        } //endif
+                    } //endif
+                } //endfor
+            } //endif
         } //endfor
         
         // //still cannot transform, check for w-> u*
@@ -182,13 +254,13 @@ int VNIMProcessKey(UChar keyCode, int capStatus) {
         //         return VNTrue;   
         //     }
         // } //endfor
-    } else if (VNIMIsWordTransformer(keyCode)) {
+    } else if (ViIsWordTransformer(keyCode)) {
         for (i = 0; i < sWordTransformNumber; i++) {
             if (sWordTransformIndex[i][0] == keyCode) {
                 if (sCurrentWord->transform == sWordTransformIndex[i][1]) {
                     //revert
                     sCurrentWord->transform = WordTransform0;
-                    if (VNIMAppendWord(sCurrentWord, keyCode, capStatus)) {
+                    if (ViAppendWord(sCurrentWord, keyCode, capStatus)) {
                         return VNTrue;    
                     } else {
                         return VNFalse;
@@ -201,62 +273,21 @@ int VNIMProcessKey(UChar keyCode, int capStatus) {
         }
     } //endif
         
-    if (VNIMAppendWord(sCurrentWord, keyCode, capStatus)) {
+    if (ViAppendWord(sCurrentWord, keyCode, capStatus)) {
         return VNTrue;
     }
     
-    return VNFalse;    
+    return VNFalse;
 }
 
-int FindCharsetIndex(UChar keyCode) {
-    int i;
-    for (i = 0; i < CharSetIndexMax; i++) {
-        if (CharSetIndex[i][0] == keyCode) {
-            return CharSetIndex[i][1];
-        }
-    }
-    return -1;
-}
-
-wchar_t VNCharToWChar(VNChar* vnChar, UChar wordTransformShift) {
-    int index = FindCharsetIndex(vnChar->origin);
-    if (index >= 0) {
-        if (vnChar->origin == VNCharD) {
-            index += vnChar->transform * 2;
-        } else {
-            index += vnChar->transform * 12;
-            index += wordTransformShift * 2;
-        }
-        if (! vnChar->isUpper) {
-            index += 1;
-        }
-        return UnicodeVNCharset[index];            
-    }
-    printf("not converting [%c]\n",vnChar->origin);
-    if (vnChar->isUpper) {
-        return (wchar_t)toupper(vnChar->origin);
+/*
+ * process backspace
+ */
+int ViProcessBackspace() {
+    if (sCurrentWord->length > 0){
+        sCurrentWord->length--;
+        return VNTrue;
     } else {
-        return (wchar_t)vnChar->origin;        
+        return VNFalse;
     }
-}
-
-int VNIMConvertWordToWChar(wchar_t* outBuffer, int* outLength) {
-    (*outLength) = sCurrentWord->length;
-    int needWordTransform = (sCurrentWord->transform != WordTransform0);
-    UChar wordTransformShift = 0;
-    //process word first
-    int i, index;
-    for (i = 0; i < *outLength; i++) {
-        if (needWordTransform && VEIsVowel(sCurrentWord->chars[i].origin)) {
-            wordTransformShift = sCurrentWord->transform;
-            needWordTransform = 0;
-            outBuffer[i] = VNCharToWChar(&(sCurrentWord->chars[i]), wordTransformShift);
-        } else {
-            outBuffer[i] = VNCharToWChar(&(sCurrentWord->chars[i]), 0);
-        }
-    }
-    outBuffer[*outLength] = 0;    
-    // for (i =0; i< sCurrentWord->length; i++) {
-    //     outBuffer[i] = sCurrentWord->chars[i].origin;
-    // }    
 }

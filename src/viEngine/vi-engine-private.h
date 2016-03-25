@@ -65,7 +65,7 @@ typedef struct {
 
 #define WORD_MAX_LENGTH 10
 typedef struct {
-    VNChar chars[WORD_MAX_LENGTH];
+    VNChar chars[WORD_MAX_LENGTH + 1];
     UChar transform;
     int length;
 } VNWord;
