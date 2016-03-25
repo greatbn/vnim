@@ -1,4 +1,4 @@
-AC_INIT([Tutorial Program], 1.0)
+AC_INIT([A Vietnamese Input Method for X Windows], 0.1.0)
 AM_INIT_AUTOMAKE([subdir-objects])
 AC_PROG_CC
 LT_INIT
