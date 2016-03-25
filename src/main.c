@@ -542,7 +542,7 @@ char **argv;
     encodings->count_encodings = sizeof(SupportedEncodings)/sizeof(XIMEncoding) - 1;
     encodings->supported_encodings = SupportedEncodings;
     
-    XIMInit(); //init unikey
+    XIMInit(); //init engine
 
     ims = IMOpenIM(dpy,
 		   IMModifiers, "Xi18n",
