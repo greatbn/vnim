@@ -73,9 +73,9 @@ int XIMProcessKey(XKeyEvent * keyEvent) {
                 ViGetCurrentWord(preEditText, &preEditLength);
                 return PREEDIT_ACTION_DRAW;
             } else {
-                preEditText[preEditLength++] = (wchar_t)keyval;
-                preEditText[preEditLength] = 0;
-                return PREEDIT_ACTION_COMMIT; 
+                // preEditText[preEditLength++] = (wchar_t)keyval;
+                // preEditText[preEditLength] = 0;
+                // return PREEDIT_ACTION_COMMIT; 
             }
         }
     }

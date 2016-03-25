@@ -88,25 +88,25 @@ static XIMEncoding SupportedEncodings[] = {
 
 
 // queue implementations
-#define MAX_BUFFER 100
-static XEvent Queue[MAX_BUFFER];
-static int FirstIndex = 0;
-static int LastIndex = 0;
+// #define MAX_BUFFER 100
+// static XEvent Queue[MAX_BUFFER];
+// static int FirstIndex = 0;
+// static int LastIndex = 0;
 
-void Push(XEvent* xEvent) {
-    Queue[LastIndex] = *xEvent;
-    LastIndex = (LastIndex +1 ) % MAX_BUFFER;
-}
+// void Push(XEvent* xEvent) {
+//     Queue[LastIndex] = *xEvent;
+//     LastIndex = (LastIndex +1 ) % MAX_BUFFER;
+// }
 
-Bool Pop(XEvent* xEvent) {
-    if (FirstIndex == LastIndex) {
-        printf("queue empty\n");
-        return False;
-    }
-    (*xEvent) = Queue[FirstIndex];
-    FirstIndex = (FirstIndex + 1) % MAX_BUFFER;
-    return True;
-}
+// Bool Pop(XEvent* xEvent) {
+//     if (FirstIndex == LastIndex) {
+//         printf("queue empty\n");
+//         return False;
+//     }
+//     (*xEvent) = Queue[FirstIndex];
+//     FirstIndex = (FirstIndex + 1) % MAX_BUFFER;
+//     return True;
+// }
 
 Bool MyGetICValuesHandler(XIMS ims, IMChangeICStruct *call_data)
 {
@@ -289,7 +289,8 @@ void IMPreeditCommit(XIMS ims, IMForwardEventStruct *call_data, const wchar_t *b
     //hide preedit text before doing commit
         IMPreeditHide(ims, call_data);
 //    ims->sync =True;
-    IMCommitStruct* commitInfo = (IMCommitStruct*)call_data;
+    //IMCommitStruct* commitInfo = (IMCommitStruct*)call_data;
+    IMCommitStruct commitInfo;
     XIMText text;
     XTextProperty tp;
 
@@ -297,21 +298,22 @@ void IMPreeditCommit(XIMS ims, IMForwardEventStruct *call_data, const wchar_t *b
                                     (wchar_t **)&buffer,
                                     1, XCompoundTextStyle, &tp);    
     
-    // *((IMAnyStruct *)&commitInfo) = *((IMAnyStruct *)call_data);
-    //commitInfo.major_code = XIM_COMMIT;
-    //commitInfo.icid = call_data->icid;
-    //commitInfo.connect_id = call_data->connect_id;
-    commitInfo->flag |= XimLookupChars;
-    commitInfo->commit_string = (unsigned char*)tp.value;
+    *((IMAnyStruct *)&commitInfo) = *((IMAnyStruct *)call_data);
+    commitInfo.major_code = XIM_COMMIT;
+    commitInfo.icid = call_data->icid;
+    commitInfo.connect_id = call_data->connect_id;
+    commitInfo.flag = XimLookupChars;
+    commitInfo.commit_string = (unsigned char*)tp.value;
     // ((IMCommitStruct*)call_data)->flag |= XimLookupChars; 
 	// ((IMCommitStruct*)call_data)->commit_string = (unsigned char *)tp.value;
-    IMCommitString(ims, (XPointer)commitInfo);
+    IMCommitString(ims, (XPointer)&commitInfo);
     XFree (tp.value);
     XIMCommitDone(); //callback
 }
   
 void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
-{    
+{
+    //IMPreeditHide(ims, call_data);    
     switch (XIMProcessKey((XKeyEvent*)&call_data->event)) {
         case PREEDIT_ACTION_DRAW:
             printf("PREEDIT_ACTION_DRAW\n");
@@ -323,8 +325,9 @@ void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
             break;
         case PREEDIT_ACTION_COMMIT_FORWARD:
             printf("PREEDIT_ACTION_COMMIT_FORWARD %d\n",call_data->sync_bit);
-            ims->sync = True;
+            //ims->sync = True;
             IMPreeditCommit(ims, call_data, XIMGetPreeditText());
+            //sleep(3);
             // IMSyncXlib(ims, (XPointer)call_data);
 // /            ims->sync =True;
             // isPending = True;
@@ -333,8 +336,17 @@ void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
             // IMSyncXlib(ims, (XPointer)call_data);
             //printf("pending = %d\n",pending);
             //XSync(ims->core.display, False);
-            Push(&(call_data->event));
-            //IMForwardEvent(ims, call_data);
+            //Push(&(call_data->event));
+            IMForwardEvent(ims, call_data);
+            // IMForwardEventStruct fe;
+            // fe.major_code = XIM_FORWARD_EVENT;
+            // fe.minor_code = 0;
+            // fe.icid = call_data->icid;
+            // fe.connect_id = call_data->connect_id;
+            // fe.sync_bit = 0;
+            // fe.serial_number = 0L;
+            // fe.event = call_data->event;            
+            // IMForwardEvent(ims, &fe);
             printf("fw done\n");
             break;
         case PREEDIT_ACTION_FORWARD:
@@ -460,13 +472,13 @@ Bool MyProtoHandler(XIMS ims, IMProtocol* call_data)
 	return MyPreeditCaretReplyHandler(ims, call_data);
         case XIM_SYNC_REPLY:
             printf("sync done\n");
-            XEvent event;
-            if (Pop(&event)) {
-                printf("do syncing...\n");
-                IMForwardEventStruct* fwdata = (IMForwardEventStruct*)call_data;
-                fwdata->event = event;
-                IMForwardEvent(ims, fwdata);
-            }            
+            // XEvent event;
+            // if (Pop(&event)) {
+            //     printf("do syncing...\n");
+            //     IMForwardEventStruct* fwdata = (IMForwardEventStruct*)call_data;
+            //     fwdata->event = event;
+            //     IMForwardEvent(ims, fwdata);
+            // }            
             return True;
       default:
       //printf("testing\n");
