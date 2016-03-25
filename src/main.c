@@ -86,7 +86,27 @@ static XIMEncoding SupportedEncodings[] = {
     NULL
 };
 
-long filter_mask = KeyPressMask;
+
+// queue implementations
+#define MAX_BUFFER 100
+static XEvent Queue[MAX_BUFFER];
+static int FirstIndex = 0;
+static int LastIndex = 0;
+
+void Push(XEvent* xEvent) {
+    Queue[LastIndex] = *xEvent;
+    LastIndex = (LastIndex +1 ) % MAX_BUFFER;
+}
+
+Bool Pop(XEvent* xEvent) {
+    if (FirstIndex == LastIndex) {
+        printf("queue empty\n");
+        return False;
+    }
+    (*xEvent) = Queue[FirstIndex];
+    FirstIndex = (FirstIndex + 1) % MAX_BUFFER;
+    return True;
+}
 
 Bool MyGetICValuesHandler(XIMS ims, IMChangeICStruct *call_data)
 {
@@ -168,7 +188,14 @@ static void IMPreeditDraw(XIMS ims, IMForwardEventStruct *call_data, const wchar
     static int last_len = 0;
     if (gIsPreeditShowing == False) {
         printf("IMPreeditShow\n");
-        IMPreeditStart(ims, (XPointer)call_data);
+        IMPreeditCBStruct pcb;
+
+        pcb.major_code        = XIM_PREEDIT_START;
+        pcb.minor_code        = 0;
+        pcb.connect_id        = call_data->connect_id;
+        pcb.icid              = call_data->icid;
+        pcb.todo.return_value = 0;
+        IMCallCallback (ims, (XPointer) & pcb);
         gIsPreeditShowing = True;
         last_len = 0;
     }
@@ -242,8 +269,17 @@ static void IMPreeditDraw(XIMS ims, IMForwardEventStruct *call_data, const wchar
 static void IMPreeditHide (XIMS ims, IMForwardEventStruct *call_data) {
     if (gIsPreeditShowing == True) {
         printf("IMPreeditHide\n");        
-        IMPreeditDraw(ims, call_data, NULL);
-        IMPreeditEnd(ims, call_data);
+        //IMPreeditDraw(ims, call_data, NULL);
+        
+        IMPreeditCBStruct pcb;
+
+        pcb.major_code        = XIM_PREEDIT_DONE;
+        pcb.minor_code        = 0;
+        pcb.connect_id        = call_data->connect_id;
+        pcb.icid              = call_data->icid;
+        pcb.todo.return_value = 0;
+        IMCallCallback (ims, (XPointer) & pcb);
+        // IMPreeditEnd(ims, call_data);
         gIsPreeditShowing = False;
     }
 }
@@ -289,22 +325,23 @@ void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
             break;
         case PREEDIT_ACTION_COMMIT_FORWARD:
             printf("PREEDIT_ACTION_COMMIT_FORWARD %d\n",call_data->sync_bit);
+            ims->sync = True;
             IMPreeditCommit(ims, call_data, XIMGetPreeditText());
             // IMSyncXlib(ims, (XPointer)call_data);
 // /            ims->sync =True;
             // isPending = True;
             // pendingEvent = (*call_data);
             //int pending = XPending(ims->core.display);
-            IMSyncXlib(ims, (XPointer)call_data);
+            // IMSyncXlib(ims, (XPointer)call_data);
             //printf("pending = %d\n",pending);
             //XSync(ims->core.display, False);
-            IMForwardEvent(ims, call_data);
+            Push(&(call_data->event));
+            //IMForwardEvent(ims, call_data);
             printf("fw done\n");
             break;
         case PREEDIT_ACTION_FORWARD:
             printf("PREEDIT_ACTION_FORWARD\n");
             IMPreeditHide(ims, call_data);
-
             IMForwardEvent(ims, call_data);
             break;
         case PREEDIT_ACTION_DISCARD:
@@ -423,11 +460,13 @@ Bool MyProtoHandler(XIMS ims, IMProtocol* call_data)
 	return MyPreeditCaretReplyHandler(ims, call_data);
         case XIM_SYNC_REPLY:
             printf("sync done\n");
-            // if (isPending == True) {
-            //     isPending = False;
-            //     IMForwardEvent(ims, &pendingEvent);
-            //     printf("fw done\n");
-            // }
+            XEvent event;
+            if (Pop(&event)) {
+                printf("do syncing...\n");
+                IMForwardEventStruct* fwdata = (IMForwardEventStruct*)call_data;
+                fwdata->event = event;
+                IMForwardEvent(ims, fwdata);
+            }            
             return True;
       default:
       //printf("testing\n");
@@ -560,7 +599,7 @@ char **argv;
     IMSetIMValues(ims,
 		  IMEncodingList, encodings,
 		  IMProtocolHandler, MyProtoHandler,
-		  IMFilterEventMask, filter_mask,
+		  IMFilterEventMask, KeyPressMask,
 		  NULL);
 
     XSelectInput(dpy, im_window, StructureNotifyMask|ButtonPressMask);
