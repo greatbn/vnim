@@ -292,7 +292,7 @@ void IMPreeditCommit(XIMS ims, IMForwardEventStruct *call_data, const wchar_t *b
     IMCommitStruct* commitInfo = (IMCommitStruct*)call_data;
     XIMText text;
     XTextProperty tp;
-    
+
     XwcTextListToTextProperty (ims->core.display,
                                     (wchar_t **)&buffer,
                                     1, XCompoundTextStyle, &tp);    
@@ -306,12 +306,10 @@ void IMPreeditCommit(XIMS ims, IMForwardEventStruct *call_data, const wchar_t *b
     // ((IMCommitStruct*)call_data)->flag |= XimLookupChars; 
 	// ((IMCommitStruct*)call_data)->commit_string = (unsigned char *)tp.value;
     IMCommitString(ims, (XPointer)commitInfo);
-    
     XFree (tp.value);
-    
     XIMCommitDone(); //callback
 }
-
+  
 void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
 {    
     switch (XIMProcessKey((XKeyEvent*)&call_data->event)) {
@@ -443,7 +441,9 @@ Bool MyProtoHandler(XIMS ims, IMProtocol* call_data)
 	    return True;
       case XIM_UNSET_IC_FOCUS:
         fprintf(stderr, "XIM_UNSET_IC_FOCUS:\n");
-        IMPreeditCommit(ims, call_data, XIMGetPreeditText());
+        if (gIsPreeditShowing) {
+            IMPreeditCommit(ims, call_data, XIMGetPreeditText());
+        }
         XIMFocusOut();
 	    return True;
       case XIM_RESET_IC:

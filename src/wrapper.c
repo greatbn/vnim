@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stddef.h>
 // #include <X11/Xlocale.h>
 // #include <X11/Xlib.h>
@@ -66,12 +67,16 @@ int XIMProcessKey(XKeyEvent * keyEvent) {
         return PREEDIT_ACTION_NONE;
     } else if (count > 0) {
         keyval = strbuf[0]; 
-        if (keyval > ' ' && keyval <= '~' ) {
+        if (keyval >=' ' && keyval <= '~' ) {
             printf("processKey [%c]. shift %d, caplock %d\n", keyval, keyEvent->state & ShiftMask, keyEvent->state & LockMask);
             if (ViProcessKey(keyval, ((keyEvent->state & ShiftMask) > 0) != ((keyEvent->state & LockMask) > 0))){
                 ViGetCurrentWord(preEditText, &preEditLength);
                 return PREEDIT_ACTION_DRAW;
-            }                        
+            } else {
+                preEditText[preEditLength++] = (wchar_t)keyval;
+                preEditText[preEditLength] = 0;
+                return PREEDIT_ACTION_COMMIT; 
+            }
         }
     }
     
@@ -83,6 +88,7 @@ int XIMProcessKey(XKeyEvent * keyEvent) {
 }
 
 void XIMCommitDone() {
+    printf("XIMCommitDone\n");
     ViResetEngine();
     preEditLength = 0;
     preEditText[0] = 0;
