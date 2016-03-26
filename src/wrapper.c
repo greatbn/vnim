@@ -107,7 +107,7 @@ void XIMFocusOut() {
 
 void XIMInit() {
     ViInitEngine();    
-    engineEnabled = True;      
+    engineEnabled = True;
 }
 
 void XIMDestroy() {

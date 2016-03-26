@@ -44,7 +44,7 @@ static const UChar TelexCharTransformIndex[][3] = {
 };
 static const int TelexCharTransformNumber = 7;
 
-static const UChar TelexCharConversionIndex[][2] = {
+static const UChar TelexCharConversionIndex[][3] = {
     {VNCharW, VNCharU, CharTransform1}
 };
 static const int TelexCharConversionNumber = 1;

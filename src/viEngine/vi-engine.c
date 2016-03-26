@@ -16,6 +16,8 @@ static UChar (*sWordTransformIndex)[2];
 static int sWordTransformNumber;
 static UChar (*sCharTransformIndex)[3];
 static int sCharTransformNumber;
+static UChar (*sCharConversionIndex)[3];
+static int sCharConversionNumber;
 
 //private methods
 /**
@@ -135,6 +137,15 @@ int ViAppendWord(VNWord* vnWord, UChar keyCode, int capStatus) {
     return VNTrue;
 }
 
+int ViAppendWordVNChar(VNWord* vnWord, VNChar* vnChar) {
+    if (vnWord->length >=WORD_MAX_LENGTH) {
+        return VNFalse;
+    }
+    
+    vnWord->chars[vnWord->length++] = (*vnChar);
+    return VNTrue;
+}
+
 /**
  * Check if can handle this key or not
  */
@@ -216,6 +227,8 @@ void ViInitEngine() {
     sWordTransformNumber = TelexWordTransformNumber;
     sCharTransformIndex = TelexCharTransformIndex;
     sCharTransformNumber = TelexCharTransformNumber;
+    sCharConversionIndex = TelexCharConversionIndex;
+    sCharConversionNumber = TelexCharConversionNumber;
 }
 
 void ViDestroyEngine() {
@@ -252,10 +265,6 @@ void ViGetCurrentWord(wchar_t* outBuffer, int* outLength) {
                     if (i > 1 && sCurrentWord->chars[i-2].origin == VNCharQ && sCurrentWord->chars[i-1].origin == VNCharU) {
                         wordTransformShift = sCurrentWord->transform;
                     }
-                    
-                    // if (i > 1 && sCurrentWord->chars[i-1].origin == VNCharY) {
-                    //     wordTransformShift = sCurrentWord->transform;
-                    // }
                 }
                 if (wordTransformShift > 0) {
                     needWordTransform = VNFalse; //word is transformed
@@ -284,6 +293,7 @@ int ViProcessKey(UChar keyCode, int capStatus) {
     
     // a char transformer?
     if (ViIsCharTransformer(keyCode)) {
+        printf("char transformer\n");
         for (j = 0; j < sCharTransformNumber; j++ ) {
             for (i = sCurrentWord->length-1; i>=0; i--) {
                 // printf("checking %d\n",i);
@@ -321,7 +331,20 @@ int ViProcessKey(UChar keyCode, int capStatus) {
                 }
             }
         }
-    } //endif
+    }
+    
+    //try to use single char tranform on this new keycode
+    for (i = 0; i < sCharConversionNumber; i++) {
+        if (sCharConversionIndex[i][0] == keyCode) {
+            VNChar vnChar;
+            vnChar.isUpper = capStatus;
+            vnChar.origin = sCharConversionIndex[i][1];
+            vnChar.transform = sCharConversionIndex[i][2];
+            if (ViAppendWordVNChar(sCurrentWord, &vnChar)) {
+                return VNTrue;
+            }
+        }
+    }
         
     if (ViAppendWord(sCurrentWord, keyCode, capStatus)) {
         return VNTrue;
