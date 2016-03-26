@@ -26,10 +26,11 @@ vnim-xim &
 
 ## TODO
 
-- [] Support VNI
-- [] Application indicator at tray bar
-- [] Allow press w->u*
-- [] Allow change settings
+- [ ] Support VNI
+- [ ] Application indicator at tray bar
+- [x] Allow to press w->u*
+- [ ] Allow to change settings while running
+- [ ] Auto commit text when the editing word is olng enough
 
 ## Author
 
