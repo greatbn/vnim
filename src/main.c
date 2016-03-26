@@ -88,25 +88,25 @@ static XIMEncoding SupportedEncodings[] = {
 
 
 // queue implementations
-// #define MAX_BUFFER 100
-// static XEvent Queue[MAX_BUFFER];
-// static int FirstIndex = 0;
-// static int LastIndex = 0;
+#define MAX_BUFFER 100
+static XEvent Queue[MAX_BUFFER];
+static int FirstIndex = 0;
+static int LastIndex = 0;
 
-// void Push(XEvent* xEvent) {
-//     Queue[LastIndex] = *xEvent;
-//     LastIndex = (LastIndex +1 ) % MAX_BUFFER;
-// }
+void Push(XEvent* xEvent) {
+    Queue[LastIndex] = *xEvent;
+    LastIndex = (LastIndex +1 ) % MAX_BUFFER;
+}
 
-// Bool Pop(XEvent* xEvent) {
-//     if (FirstIndex == LastIndex) {
-//         printf("queue empty\n");
-//         return False;
-//     }
-//     (*xEvent) = Queue[FirstIndex];
-//     FirstIndex = (FirstIndex + 1) % MAX_BUFFER;
-//     return True;
-// }
+Bool Pop(XEvent* xEvent) {
+    if (FirstIndex == LastIndex) {
+        printf("queue empty\n");
+        return False;
+    }
+    (*xEvent) = Queue[FirstIndex];
+    FirstIndex = (FirstIndex + 1) % MAX_BUFFER;
+    return True;
+}
 
 Bool MyGetICValuesHandler(XIMS ims, IMChangeICStruct *call_data)
 {
@@ -333,7 +333,7 @@ void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
             break;
         case PREEDIT_ACTION_COMMIT_FORWARD:
             printf("PREEDIT_ACTION_COMMIT_FORWARD %d\n",call_data->sync_bit);
-            //ims->sync = True;
+            ims->sync = True;
             IMPreeditCommit(ims, call_data, XIMGetPreeditText());
             //sleep(3);
             // IMSyncXlib(ims, (XPointer)call_data);
@@ -341,11 +341,11 @@ void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
             // isPending = True;
             // pendingEvent = (*call_data);
             //int pending = XPending(ims->core.display);
-            IMSyncXlib(ims, (XPointer)call_data);
+            //IMSyncXlib(ims, (XPointer)call_data);
             //printf("pending = %d\n",pending);
             //XSync(ims->core.display, False);
-            //Push(&(call_data->event));
-            IMForwardEvent(ims, call_data);
+            Push(&(call_data->event));
+            //IMForwardEvent(ims, call_data);
             // IMForwardEventStruct fe;
             // fe.major_code = XIM_FORWARD_EVENT;
             // fe.minor_code = 0;
@@ -482,14 +482,14 @@ Bool MyProtoHandler(XIMS ims, IMProtocol* call_data)
         fprintf(stderr, "XIM_PREEDIT_CARET_REPLY:\n");
 	return MyPreeditCaretReplyHandler(ims, call_data);
         case XIM_SYNC_REPLY:
-            printf("sync done\n");
-            // XEvent event;
-            // if (Pop(&event)) {
-            //     printf("do syncing...\n");
-            //     IMForwardEventStruct* fwdata = (IMForwardEventStruct*)call_data;
-            //     fwdata->event = event;
-            //     IMForwardEvent(ims, fwdata);
-            // }            
+            printf("sync received\n");
+            XEvent event;
+            if (Pop(&event)) {
+                printf("do syncing...\n");
+                IMForwardEventStruct* fwdata = (IMForwardEventStruct*)call_data;
+                fwdata->event = event;
+                IMForwardEvent(ims, fwdata);
+            }            
             return True;
       default:
       //printf("testing\n");
