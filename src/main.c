@@ -245,24 +245,31 @@ static void IMPreeditDraw(XIMS ims, IMForwardEventStruct *call_data, const wchar
         printf("length = %d %s\n",text.length, text.string.multi_byte);
         IMCallCallback (ims, (XPointer) &pcb);
         XFree (tp.value);
-    } else {
-        printf("draw nothing\n");
-        pcb.major_code = XIM_PREEDIT_DRAW;
-        pcb.connect_id = call_data->connect_id;
-        pcb.icid = call_data->icid;        
-        pcb.todo.draw.caret = 0;
-        pcb.todo.draw.chg_first = 0;
-        pcb.todo.draw.chg_length = last_len;
-        pcb.todo.draw.text = &text;
-                
-        text.encoding_is_wchar = 0;
-        text.length = 0;
-        text.string.multi_byte = "";
-        feedback[0] = 0;
-        text.feedback = feedback;
-                
-        IMCallCallback (ims, (XPointer) &pcb);
-        last_len = 0;
+    } else if (last_len > 0) {
+            //these following code is used to clean preedit text
+            printf("draw nothing\n");
+            pcb.major_code = XIM_PREEDIT_DRAW;
+            pcb.connect_id = call_data->connect_id;
+            pcb.icid = call_data->icid;        
+            pcb.todo.draw.caret = 0;
+            pcb.todo.draw.chg_first = 0;
+            pcb.todo.draw.chg_length = last_len;
+            pcb.todo.draw.text = &text;
+                    
+            text.encoding_is_wchar = 0;
+            text.length = 0;
+            text.string.multi_byte = "";
+            feedback[0] = 0;
+            text.feedback = feedback;
+                    
+            IMCallCallback (ims, (XPointer) &pcb);
+            last_len = 0;
+    }
+}
+
+static void IMPreeditSoftHide(XIMS ims, IMForwardEventStruct* call_data){
+    if (gIsPreeditShowing) {
+        IMPreeditDraw(ims, call_data, NULL);
     }
 }
 
@@ -287,7 +294,8 @@ static void IMPreeditHide (XIMS ims, IMForwardEventStruct *call_data) {
 void IMPreeditCommit(XIMS ims, IMForwardEventStruct *call_data, const wchar_t *buffer)
 {
     //hide preedit text before doing commit
-        IMPreeditHide(ims, call_data);
+    //IMPreeditHide(ims, call_data);
+    IMPreeditSoftHide(ims,call_data);
 //    ims->sync =True;
     //IMCommitStruct* commitInfo = (IMCommitStruct*)call_data;
     IMCommitStruct commitInfo;
@@ -310,7 +318,7 @@ void IMPreeditCommit(XIMS ims, IMForwardEventStruct *call_data, const wchar_t *b
     XFree (tp.value);
     XIMCommitDone(); //callback
 }
-  
+
 void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
 {
     //IMPreeditHide(ims, call_data);    
@@ -333,7 +341,7 @@ void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
             // isPending = True;
             // pendingEvent = (*call_data);
             //int pending = XPending(ims->core.display);
-            // IMSyncXlib(ims, (XPointer)call_data);
+            IMSyncXlib(ims, (XPointer)call_data);
             //printf("pending = %d\n",pending);
             //XSync(ims->core.display, False);
             //Push(&(call_data->event));
@@ -351,12 +359,12 @@ void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
             break;
         case PREEDIT_ACTION_FORWARD:
             printf("PREEDIT_ACTION_FORWARD\n");
-            IMPreeditHide(ims, call_data);
+            IMPreeditSoftHide(ims, call_data);
             IMForwardEvent(ims, call_data);
             break;
         case PREEDIT_ACTION_DISCARD:
             printf("PREEDIT_ACTION_DISCARD\n");
-            IMPreeditHide(ims, call_data);
+            IMPreeditSoftHide(ims, call_data);
             break;
     }
         
@@ -449,12 +457,15 @@ Bool MyProtoHandler(XIMS ims, IMProtocol* call_data)
 	return MyForwardEventHandler(ims, call_data);
       case XIM_SET_IC_FOCUS:
         fprintf(stderr, "XIM_SET_IC_FOCUS()\n");
+        //IMPreeditHide(ims,call_data);
+        IMPreeditSoftHide(ims, call_data);
         XIMFocusIn();
 	    return True;
       case XIM_UNSET_IC_FOCUS:
         fprintf(stderr, "XIM_UNSET_IC_FOCUS:\n");
         if (gIsPreeditShowing) {
             IMPreeditCommit(ims, call_data, XIMGetPreeditText());
+            IMPreeditHide(ims,call_data);
         }
         XIMFocusOut();
 	    return True;
@@ -487,12 +498,14 @@ Bool MyProtoHandler(XIMS ims, IMProtocol* call_data)
     }
 }
 
+XIMS ims;
 //------------------------------------------------------
 void MyXEventHandler(Window im_window, XEvent *event)
 {
     switch (event->type) {
     case DestroyNotify:
         XDestroyWindow(event->xbutton.display, im_window);
+        IMCloseIM(ims);
         exit(0);    
         break;
     case ButtonPress:
@@ -517,7 +530,6 @@ char **argv;
     char *display_name = NULL;
     Display *dpy;
     char *imname = NULL;
-    XIMS ims;
     XIMStyles *input_styles/*, *styles2*/;
     //XIMTriggerKeys *on_keys, *trigger2;
     XIMEncodings *encodings/*, *encoding2*/;

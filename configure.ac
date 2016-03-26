@@ -16,5 +16,6 @@ AC_CONFIG_FILES(
     src/viEngine/Makefile
 )
 AC_OUTPUT
-
-
+AC_MSG_RESULT([
+  Install prefix                $prefix
+])
