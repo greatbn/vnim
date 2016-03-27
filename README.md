@@ -13,7 +13,6 @@ autoconf, automake, gnome-common are required to compile.
 make
 sudo make install    
 ```
-
 ## Usage
 
 Add the following lines to your ${HOME}/.profile or ${HOME}/.bashrc
@@ -26,11 +25,14 @@ vnim-xim &
 
 ## TODO
 
-- [ ] Support VNI
-- [ ] Application indicator at tray bar
+v0.1.0
+- [x] Support VNI
 - [x] Allow to press w->u*
 - [ ] Allow to change settings while running
-- [ ] Auto commit text when the editing word is olng enough
+- [ ] Auto commit text when the editing word is long enough
+v0.2.0
+- [ ] Application indicator at tray bar
+- [ ] Support Full Telex
 
 ## Author
 
