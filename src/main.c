@@ -28,10 +28,10 @@ int XIMProcessKey(XKeyEvent * keyEvent) {
 
     memset(strbuf, 0, STRBUFLEN);
     count = XLookupString(keyEvent, strbuf, STRBUFLEN, &keysym, NULL);
-    printf("keysym = %d, keycode = %d, modifiers = %d\n",keysym,keyEvent->keycode, keyEvent->state);    
+    printf("XIMProcessKey keysym = %d, keycode = %d, modifiers = %d\n",keysym,keyEvent->keycode, keyEvent->state);    
     
     if ((keyEvent->state & ControlMask) || (keyEvent->state & Mod1Mask)) {
-        printf("special key, hot key\n");
+        printf("This is a special key or hot key\n");
         if ((keyEvent->state & ControlMask) && (keysym == XK_Shift_L)
             || (keyEvent->state & Mod1Mask) && (keysym == XK_z) ){
             engineEnabled = (engineEnabled == True)?False:True;
@@ -116,12 +116,13 @@ extern void InitXIM();
 
 int main(int argc, char** argv) {
     int inputEngine = TELEX_INPUT;
+    Bool enableVerbose = False;
     int i;    
     for (i = 1; i < argc; i++) {
 	    if (!strcmp(argv[i], "--vni")) {
 	        inputEngine = VNI_INPUT;
-	//     } else if (!strcmp(argv[i], "-display")) {
-	//     display_name = argv[++i];
+	    } else if (!strcmp(argv[i], "--verbose")) {
+	        enableVerbose = True;
 	// } else if (!strcmp(argv[i], "-dynamic")) {
 	//     use_trigger = True;
 	// } else if (!strcmp(argv[i], "-static")) {
@@ -135,6 +136,10 @@ int main(int argc, char** argv) {
 	// } else if (!strcmp(argv[i], "-kl")) {
 	//     filter_mask = (KeyPressMask|KeyReleaseMask);
 	    }
+    }
+    
+    if (! enableVerbose) { //disable log
+        fclose(stdout);
     }    
     
     XIMInit();

@@ -217,7 +217,6 @@ static void IMPreeditDraw(XIMS ims, IMForwardEventStruct *call_data, const wchar
         unsigned int j, i, len;
         
         len = wcslen(buffer);
-        printf("len = %d\n", len);
 
         pcb.todo.draw.caret = len;
         ic->preedit_len = len;
@@ -227,7 +226,6 @@ static void IMPreeditDraw(XIMS ims, IMForwardEventStruct *call_data, const wchar
         }
         feedback[len] = 0;
             
-        printf("preEditDraw\n");
         XwcTextListToTextProperty (ims->core.display,
                                      (wchar_t **)&buffer,
                                      1, XCompoundTextStyle, &tp);
@@ -342,7 +340,7 @@ Bool MyForwardEventHandler(XIMS ims, IMForwardEventStruct* call_data)
 {
     printf("IMForwardEventStruct\n");
     /* Lookup KeyPress Events only */
-    fprintf(stderr, "ForwardEventHandler\n");
+    // fprintf(stderr, "ForwardEventHandler\n");
     if (call_data->event.type != KeyPress) {
         fprintf(stderr, "bogus event type, ignored\n");
     	return True;
@@ -371,54 +369,54 @@ Bool MyProtoHandler(XIMS ims, IMProtocol* call_data)
 {
     switch (call_data->major_code) {
       case XIM_OPEN:
-        fprintf(stderr, "XIM_OPEN:\n");
-	return MyOpenHandler(ims, call_data);
+        printf("XIM_OPEN:\n");
+	    return MyOpenHandler(ims, call_data);
       case XIM_CLOSE:
-        fprintf(stderr, "XIM_CLOSE:\n");
-	return MyCloseHandler(ims, call_data);
+        printf("XIM_CLOSE:\n");
+	    return MyCloseHandler(ims, call_data);
       case XIM_CREATE_IC:
-        fprintf(stderr, "XIM_CREATE_IC:\n");
-	return MyCreateICHandler(ims, call_data);
+        printf("XIM_CREATE_IC:\n");
+	    return MyCreateICHandler(ims, call_data);
       case XIM_DESTROY_IC:
-        fprintf(stderr, "XIM_DESTROY_IC.\n");
+        printf("XIM_DESTROY_IC.\n");
         return MyDestroyICHandler(ims, call_data);
       case XIM_SET_IC_VALUES:
-        fprintf(stderr, "XIM_SET_IC_VALUES:\n");
-	return MySetICValuesHandler(ims, call_data);
+        printf("XIM_SET_IC_VALUES:\n");
+	    return MySetICValuesHandler(ims, call_data);
       case XIM_GET_IC_VALUES:
-        fprintf(stderr, "XIM_GET_IC_VALUES:\n");
-	return MyGetICValuesHandler(ims, call_data);
+        printf("XIM_GET_IC_VALUES:\n");
+	    return MyGetICValuesHandler(ims, call_data);
       case XIM_FORWARD_EVENT:
-	return MyForwardEventHandler(ims, call_data);
+	    return MyForwardEventHandler(ims, call_data);
       case XIM_SET_IC_FOCUS:
-        fprintf(stderr, "XIM_SET_IC_FOCUS()\n");
+        printf("XIM_SET_IC_FOCUS()\n");
         IMPreeditSoftHide(ims, call_data);
         FirstIndex = LastIndex = 0;
         XIMFocusIn();
 	    return True;
       case XIM_UNSET_IC_FOCUS:
-        fprintf(stderr, "XIM_UNSET_IC_FOCUS:\n");
+        printf("XIM_UNSET_IC_FOCUS:\n");
         IMPreeditCommit(ims,call_data, XIMGetPreeditText());
         IMPreeditHide(ims,call_data);
         FirstIndex = LastIndex = 0;        
         XIMFocusOut();
 	    return True;
       case XIM_RESET_IC:
-        fprintf(stderr, "XIM_RESET_IC_FOCUS:\n");
+        printf("XIM_RESET_IC_FOCUS:\n");
         IMPreeditCommit(ims,call_data, XIMGetPreeditText());
         IMPreeditHide(ims,call_data);
         FirstIndex = LastIndex = 0;
         XIMResetFocus();
-	return True;
+	    return True;
       case XIM_TRIGGER_NOTIFY:
-        fprintf(stderr, "XIM_TRIGGER_NOTIFY:\n");
-	return MyTriggerNotifyHandler(ims, call_data);
+        printf("XIM_TRIGGER_NOTIFY:\n");
+	    return MyTriggerNotifyHandler(ims, call_data);
       case XIM_PREEDIT_START_REPLY:
-        fprintf(stderr, "XIM_PREEDIT_START_REPLY:\n");
-	return MyPreeditStartReplyHandler(ims, call_data);
+        printf("XIM_PREEDIT_START_REPLY:\n");
+	    return MyPreeditStartReplyHandler(ims, call_data);
       case XIM_PREEDIT_CARET_REPLY:
-        fprintf(stderr, "XIM_PREEDIT_CARET_REPLY:\n");
-	return MyPreeditCaretReplyHandler(ims, call_data);
+        printf("XIM_PREEDIT_CARET_REPLY:\n");
+	    return MyPreeditCaretReplyHandler(ims, call_data);
         case XIM_SYNC_REPLY:
             printf("sync received\n");
             XEvent event;
@@ -430,8 +428,7 @@ Bool MyProtoHandler(XIMS ims, IMProtocol* call_data)
             }            
             return True;
       default:
-      //printf("testing\n");
-	fprintf(stderr, "Unknown IMDKit Protocol message type %d\n", call_data->major_code);
+	    fprintf(stderr, "Unknown IMDKit Protocol message type %d\n", call_data->major_code);
 	break;
     }
 }
@@ -454,7 +451,6 @@ void MyXEventHandler(Window im_window, XEvent *event)
         break;
 
     case PropertyNotify:
-        printf("PropertyNotify\n");
         break;
     default:
         break;

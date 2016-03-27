@@ -65,7 +65,7 @@ int ViIsLatinChar(UChar keyCode) {
  * Check if this can be used to transform
  */
 int ViIsATransformer(UChar keyCode) {
-    printf("ViIsATransformer\n");
+    // printf("ViIsATransformer\n");
     //check if this keyCode is in the transformIndex
     // return (ViIsCharTransformer(keyCode) || ViIsWordTransformer(keyCode));
     int i;
@@ -227,7 +227,7 @@ int ViDoProcessAOE(VNWord* vnWord) {
 }
 
 void ViCorrection(VNWord* vnWord) {
-    printf("ViCorrection\n");
+    // printf("ViCorrection\n");
     //currently doing nothing
     // int i;
     // for (i=1; i< vnWord->length; i++) {        
@@ -364,7 +364,7 @@ void ViGetCurrentWord(wchar_t* outBuffer, int* outLength) {
             wordTransformShift = 0;
             if (needWordTransform && ViIsVowel(sCurrentWord->chars[i].origin)) {
                 wordTransformShift = sCurrentWord->transform;
-                printf("adding dau\n");
+                // printf("adding dau\n");
                 if (i > 0 && ViIsVowel(sCurrentWord->chars[i-1].origin)) {
                     wordTransformShift = 0; 
                     
@@ -435,7 +435,6 @@ int ViProcessKey(UChar keyCode, int capStatus) {
             retVal = ViDoWordTransform(sCurrentWord, IndexShift8);
             break;
         case VNTriggerJ:
-            printf("VNTriggerJ\n");
             retVal = ViDoWordTransform(sCurrentWord, IndexShift10);
             break;
         case VNTriggerZ:
