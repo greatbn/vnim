@@ -34,32 +34,6 @@
 #define VNCharZ ('z')
 #define VNCharZero 0
 
-// static const UChar TelexCharTransformIndex[][3] = {
-//     {VNCharW, CharTransform2, VNCharO},
-//     {VNCharW, CharTransform1, VNCharU},
-//     {VNCharW, CharTransform2, VNCharA},
-//     {VNCharA, CharTransform1, VNCharA},
-//     {VNCharE, CharTransform1, VNCharE},   
-//     {VNCharO, CharTransform1, VNCharO},
-//     {VNCharD, CharTransform1, VNCharD},
-// };
-// static const int TelexCharTransformNumber = 7;
-
-// static const UChar TelexCharConversionIndex[][3] = {
-//     {VNCharW, VNCharU, CharTransform1}
-// };
-// static const int TelexCharConversionNumber = 1;
-    
-// static const UChar TelexWordTransformIndex[][2] = {    
-//     {VNCharS, WordTransform1},
-//     {VNCharF, WordTransform2},
-//     {VNCharR, WordTransform3},
-//     {VNCharX, WordTransform4},
-//     {VNCharJ, WordTransform5},
-//     {VNCharZ, WordTransform0}
-// };
-// static const int TelexWordTransformNumber = 6;
-
 typedef struct {
     UChar origin;
     UChar transform;
@@ -95,17 +69,37 @@ typedef struct {
 #define VNTriggerS (9)
 #define VNTriggerX (10)
 #define VNTriggerZ (11)
+#define VNTriggerAW (12)
+#define VNTriggerAEO (13)
+#define VNTriggerOUW (14)
 
-#define TELEX_RULES (0)
+const UChar sTelexRules[][2] = {
+    {VNCharW, VNTriggerWFull},
+    {VNCharA, VNTriggerA},
+    {VNCharE, VNTriggerE},
+    {VNCharO, VNTriggerO},
+    {VNCharD, VNTriggerD},
+    {VNCharS, VNTriggerS},
+    {VNCharF, VNTriggerF},
+    {VNCharJ, VNTriggerJ},
+    {VNCharR, VNTriggerR},
+    {VNCharX, VNTriggerX},
+    {VNCharZ, VNTriggerZ},
+};
+const int sTelexRulesNum = 11;
 
-typedef struct {
-    UChar *** charShift;
-    UChar *** wordShift;
-    int charShiftNum;
-    int wordShiftNum;
-    int type;
-} Transformation;
+const UChar sVNIRules[][2] = {
+    {'0', VNTriggerZ},
+    {'1', VNTriggerS},
+    {'2', VNTriggerF},
+    {'3', VNTriggerR},
+    {'4', VNTriggerX},
+    {'5', VNTriggerJ},
+    {'6', VNTriggerAEO},
+    {'7', VNTriggerOUW},    
+    {'8', VNTriggerAW},
+    {'9', VNTriggerD},    
+};
+const int sVNIRulesNum = 10;
 
-extern const UChar sTelexRules[][2];
-extern const int sTelexRulesNum;
 #endif //__VNIM_PRIVATE_H__
