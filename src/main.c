@@ -15,7 +15,7 @@ static int preEditLength = 0;
 static Bool engineEnabled = False;
 
 const wchar_t * XIMGetPreeditText() {
-    return preEditText;
+    return (preEditLength > 0)?preEditText:NULL;
 }
 
 #define STRBUFLEN 64
@@ -104,6 +104,10 @@ void XIMFocusOut() {
     printf("Focus out\n");
     //ViResetEngine();
     XIMCommitDone();
+}
+
+void XIMResetFocus() {
+    XIMFocusOut();
 }
 
 void XIMInit() {

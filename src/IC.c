@@ -64,9 +64,9 @@ CARD16 icid;
     IC *rec = ic_list;
 
     while (rec != NULL) {
-	if (rec->id == icid)
-	  return rec;
-	rec = rec->next;
+	    if (rec->id == icid)
+	        return rec;
+	    rec = rec->next;
     }
 
     return NULL;
@@ -119,15 +119,15 @@ IMChangeICStruct *call_data;
 		    rec->focus_win = *(Window*)ic_attr->value;
 
 		else 
-		    fprintf(stderr, "Unknown attr: %s\n", ic_attr->name);
+		    fprintf(stderr, "Unknown IC attr: %s\n", ic_attr->name);
 	}
 	
 	for (i = 0; i < (int)call_data->preedit_attr_num; i++, pre_attr++) {
-		    fprintf(stderr, "Unknown attr: %s\n", ic_attr->name);
+		    fprintf(stderr, "Unknown Preedit attr: %s\n", ic_attr->name);
 	}
 	
 	for (i = 0; i < (int)call_data->status_attr_num; i++, sts_attr++) {
-		    fprintf(stderr, "Unknown attr: %s\n", ic_attr->name);
+		    fprintf(stderr, "Unknown Status attr: %s\n", ic_attr->name);
 	}
 	
 }

@@ -16,6 +16,7 @@ void XIMDestroy();
 void XIMFocusOut();
 void XIMFocusIn();
 void XIMCommitDone();
+void XIMResetFocus();
 const wchar_t* XIMGetPreeditText();
 int XIMProcessKey(XKeyEvent * keyEvent);
 

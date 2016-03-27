@@ -179,6 +179,10 @@ Bool MyDestroyICHandler(XIMS ims, IMChangeICStruct *call_data)
 static void IMPreeditDraw(XIMS ims, IMForwardEventStruct *call_data, const wchar_t * buffer)
 {
     IC* ic = FindIC(call_data->icid);
+    if (ic == NULL) {
+        printf("cannot find any ic\n");
+        return;
+    }
     printf("id: %d, len = %d, enabled = %d\n",call_data->icid, ic->preedit_len, ic->preedit_enabled);
     if (! ic->preedit_enabled) {
         printf("IMPreeditShow\n");
@@ -267,27 +271,31 @@ static void IMPreeditHide (XIMS ims, IMForwardEventStruct *call_data) {
     }
 }
 
-void IMPreeditCommit(XIMS ims, IMForwardEventStruct *call_data, const wchar_t *buffer)
+Bool IMPreeditCommit(XIMS ims, IMForwardEventStruct *call_data, const wchar_t *buffer)
 {
-    IMPreeditSoftHide(ims,call_data);
-    
-    IMCommitStruct commitInfo;
-    XIMText text;
-    XTextProperty tp;
+    if (buffer != NULL) {
+        IMPreeditSoftHide(ims,call_data);
+        
+        IMCommitStruct commitInfo;
+        XIMText text;
+        XTextProperty tp;
 
-    XwcTextListToTextProperty (ims->core.display,
-                                    (wchar_t **)&buffer,
-                                    1, XCompoundTextStyle, &tp);    
-    
-    *((IMAnyStruct *)&commitInfo) = *((IMAnyStruct *)call_data);
-    commitInfo.major_code = XIM_COMMIT;
-    commitInfo.icid = call_data->icid;
-    commitInfo.connect_id = call_data->connect_id;
-    commitInfo.flag = XimLookupChars;
-    commitInfo.commit_string = (unsigned char*)tp.value;
-    IMCommitString(ims, (XPointer)&commitInfo);
-    XFree (tp.value);
-    XIMCommitDone(); //callback
+        XwcTextListToTextProperty (ims->core.display,
+                                        (wchar_t **)&buffer,
+                                        1, XCompoundTextStyle, &tp);    
+        
+        *((IMAnyStruct *)&commitInfo) = *((IMAnyStruct *)call_data);
+        commitInfo.major_code = XIM_COMMIT;
+        commitInfo.icid = call_data->icid;
+        commitInfo.connect_id = call_data->connect_id;
+        commitInfo.flag = XimLookupChars;
+        commitInfo.commit_string = (unsigned char*)tp.value;
+        IMCommitString(ims, (XPointer)&commitInfo);
+        XFree (tp.value);
+        XIMCommitDone(); //callback
+        return True;
+    }
+    return False;
 }
 
 void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
@@ -305,9 +313,12 @@ void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
         case PREEDIT_ACTION_COMMIT_FORWARD:
             printf("PREEDIT_ACTION_COMMIT_FORWARD %d\n",call_data->sync_bit);
             ims->sync = True;
-            IMPreeditCommit(ims, call_data, XIMGetPreeditText());
-
-            Push(&(call_data->event));
+            if (IMPreeditCommit(ims, call_data, XIMGetPreeditText())){
+                //only queue if this is a commit success
+                Push(&(call_data->event));                
+            } else {
+                IMForwardEvent(ims, call_data);
+            }
             break;
         case PREEDIT_ACTION_FORWARD:
             printf("PREEDIT_ACTION_FORWARD\n");
@@ -378,15 +389,22 @@ Bool MyProtoHandler(XIMS ims, IMProtocol* call_data)
       case XIM_SET_IC_FOCUS:
         fprintf(stderr, "XIM_SET_IC_FOCUS()\n");
         IMPreeditSoftHide(ims, call_data);
+        FirstIndex = LastIndex = 0;
         XIMFocusIn();
 	    return True;
       case XIM_UNSET_IC_FOCUS:
         fprintf(stderr, "XIM_UNSET_IC_FOCUS:\n");
+        IMPreeditCommit(ims,call_data, XIMGetPreeditText());
         IMPreeditHide(ims,call_data);
+        FirstIndex = LastIndex = 0;        
         XIMFocusOut();
 	    return True;
       case XIM_RESET_IC:
         fprintf(stderr, "XIM_RESET_IC_FOCUS:\n");
+        IMPreeditCommit(ims,call_data, XIMGetPreeditText());
+        IMPreeditHide(ims,call_data);
+        FirstIndex = LastIndex = 0;
+        XIMResetFocus();
 	return True;
       case XIM_TRIGGER_NOTIFY:
         fprintf(stderr, "XIM_TRIGGER_NOTIFY:\n");
