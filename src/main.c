@@ -26,7 +26,6 @@ int XIMProcessKey(XKeyEvent * keyEvent) {
     static KeySym keysym;
     int count;
 
-    // fprintf(stderr, "Processing \n");
     memset(strbuf, 0, STRBUFLEN);
     count = XLookupString(keyEvent, strbuf, STRBUFLEN, &keysym, NULL);
     printf("keysym = %d, keycode = %d, modifiers = %d\n",keysym,keyEvent->keycode, keyEvent->state);    
@@ -39,11 +38,7 @@ int XIMProcessKey(XKeyEvent * keyEvent) {
             printf("engineEnabled: %d\n", engineEnabled); 
         }
         
-        if (preEditLength > 0) {
-            return PREEDIT_ACTION_COMMIT_FORWARD;
-        } else {
-            return PREEDIT_ACTION_FORWARD;
-        }
+        return PREEDIT_ACTION_COMMIT_FORWARD;
     }
     
     if (! engineEnabled) {
@@ -74,48 +69,46 @@ int XIMProcessKey(XKeyEvent * keyEvent) {
                 return PREEDIT_ACTION_DRAW;
             } else {
                 ViGetCurrentWord(preEditText, &preEditLength);
-                return PREEDIT_ACTION_COMMIT_FORWARD;
             }
         }
     }
 
-    if (preEditLength > 0) {
-        return PREEDIT_ACTION_COMMIT_FORWARD;
-    } else {
-        return PREEDIT_ACTION_FORWARD;
-    }
+    return PREEDIT_ACTION_COMMIT_FORWARD;
+}
+
+void EngineReset() {
+    ViResetEngine();
+    preEditLength = 0;
+    preEditText[0] = 0;    
 }
 
 void XIMCommitDone() {
     printf("XIMCommitDone\n");
-    ViResetEngine();
-    preEditLength = 0;
-    preEditText[0] = 0;
+    EngineReset();
 }
 
 void XIMFocusIn() {
     printf("Focus In\n");
-    ViResetEngine();
-    preEditLength = 0;
-    preEditText[0] = 0;
+    EngineReset();
 }
 
 void XIMFocusOut() {
     printf("Focus out\n");
-    //ViResetEngine();
-    XIMCommitDone();
+    EngineReset();
 }
 
 void XIMResetFocus() {
-    XIMFocusOut();
+    printf("XIMResetFocus\n");
+    EngineReset();
 }
 
 void XIMInit() {
-    ViInitEngine();    
+    ViInitEngine();
     engineEnabled = True;
 }
 
 void XIMDestroy() {
+    EngineReset();
     ViDestroyEngine();
 }
 

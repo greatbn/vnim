@@ -254,6 +254,10 @@ static void IMPreeditSoftHide(XIMS ims, IMForwardEventStruct* call_data){
 
 static void IMPreeditHide (XIMS ims, IMForwardEventStruct *call_data) {
     IC* ic = FindIC(call_data->icid);
+    if (ic == NULL) {
+        fprintf(stderr, "cannot find any ic\n");
+        return;
+    }
     if (ic->preedit_enabled) {
         IMPreeditSoftHide(ims, call_data);
         printf("IMPreeditHide\n");        
