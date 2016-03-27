@@ -21,13 +21,14 @@ const int UnicodeVNCharset[] =
 };
 
 const unsigned char CharSetIndex[][2] = {
-      {'a',0},
-      {'d',40},
-      {'e',44},
-      {'i',74},
-      {'o',96},
-      {'u',142},
-      {'y',172},
+    {0,0},
+    {'a',0},
+    {'d',40},
+    {'e',44},
+    {'i',74},
+    {'o',96},
+    {'u',142},
+    {'y',172},
 };
 
-const int CharSetIndexMax = 7;
+const int CharSetIndexMax = 8;
