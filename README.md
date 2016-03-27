@@ -8,25 +8,27 @@ autoconf, automake, gnome-common are required to compile.
 
 ## Installation
 
-1. ### Build
-```bash
-./autogen.sh
-make
-sudo make install    
-```
+1. Build
 
-2. ### Config
-Add the following lines to your ${HOME}/.xprofile or ${HOME}/.bashrc
-```bash
-export GTK_IM_MODULE=xim
-export XMODIFIERS=@im=vnim
-export QT_IM_MODULE=xim
-vnim-xim &
-```
+    ```bash
+    ./autogen.sh
+    make
+    sudo make install    
+    ```
+
+2. Config
+
+    Add the following lines to your ${HOME}/.xprofile or ${HOME}/.bashrc
+    ```bash
+    export GTK_IM_MODULE=xim
+    export XMODIFIERS=@im=vnim
+    export QT_IM_MODULE=xim
+    vnim-xim &
+    ```
 
 ## Usage
 
-### Options to start vnim-xim:
+Options to start vnim-xim:
 - --vni: To start VNIM using VNI input
  
 ## TODO
