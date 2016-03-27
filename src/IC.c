@@ -52,6 +52,8 @@ static IC
 
     rec->next = ic_list;
     ic_list = rec;
+    rec->preedit_len = 0;
+    rec->preedit_enabled = False;
     return rec;
 }
 
@@ -121,92 +123,10 @@ IMChangeICStruct *call_data;
 	}
 	
 	for (i = 0; i < (int)call_data->preedit_attr_num; i++, pre_attr++) {
-		if (Is (XNArea, pre_attr))
-		    rec->pre_attr.area = *(XRectangle*)pre_attr->value;
-	
-		else if (Is (XNAreaNeeded, pre_attr))
-		    rec->pre_attr.area_needed = *(XRectangle*)pre_attr->value;
-		
-		else if (Is (XNSpotLocation, pre_attr))
-		    rec->pre_attr.spot_location = *(XPoint*)pre_attr->value;
-		
-		else if (Is (XNColormap, pre_attr))
-		    rec->pre_attr.cmap = *(Colormap*)pre_attr->value;
-		
-		else if (Is (XNStdColormap, pre_attr))
-		    rec->pre_attr.cmap = *(Colormap*)pre_attr->value;
-		
-		else if (Is (XNForeground, pre_attr))
-		    rec->pre_attr.foreground = *(CARD32*)pre_attr->value;
-		
-		else if (Is (XNBackground, pre_attr))
-		    rec->pre_attr.background = *(CARD32*)pre_attr->value;
-		
-		else if (Is (XNBackgroundPixmap, pre_attr))
-		    rec->pre_attr.bg_pixmap = *(Pixmap*)pre_attr->value;
-		
-		else if (Is (XNFontSet, pre_attr)) {
-			int str_length = strlen(pre_attr->value);
-		
-			if (rec->pre_attr.base_font != NULL) {
-				if (Is (rec->pre_attr.base_font, pre_attr))
-					continue;
-				XFree(rec->pre_attr.base_font);
-			}
-			rec->pre_attr.base_font = malloc(str_length + 1);
-			strcpy(rec->pre_attr.base_font, pre_attr->value);
-
-		} else if (Is (XNLineSpace, pre_attr))
-			    rec->pre_attr.line_space = *(CARD32*)pre_attr->value;
-		
-		else if (Is (XNCursor, pre_attr))
-		    rec->pre_attr.cursor = *(Cursor*)pre_attr->value;
-
-		else 
 		    fprintf(stderr, "Unknown attr: %s\n", ic_attr->name);
 	}
 	
 	for (i = 0; i < (int)call_data->status_attr_num; i++, sts_attr++) {
-		if (Is (XNArea, sts_attr))
-		    rec->sts_attr.area = *(XRectangle*)sts_attr->value;
-	
-		else if (Is (XNAreaNeeded, sts_attr))
-		    rec->sts_attr.area_needed = *(XRectangle*)sts_attr->value;
-		
-		else if (Is (XNColormap, sts_attr))
-		    rec->sts_attr.cmap = *(Colormap*)sts_attr->value;
-		
-		else if (Is (XNStdColormap, sts_attr))
-		    rec->sts_attr.cmap = *(Colormap*)sts_attr->value;
-		
-		else if (Is (XNForeground, sts_attr))
-		    rec->sts_attr.foreground = *(CARD32*)sts_attr->value;
-		
-		else if (Is (XNBackground, sts_attr))
-		    rec->sts_attr.background = *(CARD32*)sts_attr->value;
-		
-		else if (Is (XNBackgroundPixmap, sts_attr))
-		    rec->sts_attr.bg_pixmap = *(Pixmap*)sts_attr->value;
-		
-		else if (Is (XNFontSet, sts_attr)) {
-			int str_length = strlen(sts_attr->value);
-		
-			if (rec->sts_attr.base_font != NULL) {
-				if (Is (rec->sts_attr.base_font, sts_attr))
-					continue;
-				XFree(rec->sts_attr.base_font);
-			}
-			rec->sts_attr.base_font = malloc(str_length + 1);
-			strcpy(rec->sts_attr.base_font, sts_attr->value);
-
-		} else if (Is (XNLineSpace, sts_attr))
-			    rec->sts_attr.line_space= *(CARD32*)sts_attr->value;
-		
-		else if (Is (XNCursor, sts_attr))
-
-		    rec->sts_attr.cursor = *(Cursor*)sts_attr->value;
-
-		else 
 		    fprintf(stderr, "Unknown attr: %s\n", ic_attr->name);
 	}
 	
@@ -266,96 +186,5 @@ IMChangeICStruct *call_data;
 	}
     }
 
-    /* preedit attributes */
-    for (i = 0; i < (int)call_data->preedit_attr_num; i++, pre_attr++) {
-	if (Is (XNArea, pre_attr)) {
-	    pre_attr->value = (void *)malloc(sizeof(XRectangle));
-	    *(XRectangle*)pre_attr->value = rec->pre_attr.area;
-	    pre_attr->value_length = sizeof(XRectangle);
 
-	} else if (Is (XNAreaNeeded, pre_attr)) {
-	    pre_attr->value = (void *)malloc(sizeof(XRectangle));
-	    *(XRectangle*)pre_attr->value = rec->pre_attr.area_needed;
-	    pre_attr->value_length = sizeof(XRectangle);
-	
-	} else if (Is (XNSpotLocation, pre_attr)) {
-	    pre_attr->value = (void *)malloc(sizeof(XPoint));
-	    *(XPoint*)pre_attr->value = rec->pre_attr.spot_location;
-	    pre_attr->value_length = sizeof(XPoint);
-	
-	} else if (Is (XNFontSet, pre_attr)) {
-	    CARD16 base_len = (CARD16)strlen(rec->pre_attr.base_font);
-	    int total_len = sizeof(CARD16) + (CARD16)base_len;
-	    char *p;
-
-	    pre_attr->value = (void *)malloc(total_len);
-	    p = (char *)pre_attr->value;
-	    memmove(p, &base_len, sizeof(CARD16));
-	    p += sizeof(CARD16);
-	    strncpy(p, rec->pre_attr.base_font, base_len);
-	    pre_attr->value_length = total_len;
-	
-	} else if (Is (XNForeground, pre_attr)) {
-	    pre_attr->value = (void *)malloc(sizeof(long));
-	    *(long*)pre_attr->value = rec->pre_attr.foreground;
-	    pre_attr->value_length = sizeof(long);
-	
-	} else if (Is (XNBackground, pre_attr)) {
-	    pre_attr->value = (void *)malloc(sizeof(long));
-	    *(long*)pre_attr->value = rec->pre_attr.background;
-	    pre_attr->value_length = sizeof(long);
-
-	} else if (Is (XNLineSpace, pre_attr)) {
-	    pre_attr->value = (void *)malloc(sizeof(long));
-#if 0
-	    *(long*)pre_attr->value = rec->pre_attr.line_space;
-#endif
-	    *(long*)pre_attr->value = 18;
-	    pre_attr->value_length = sizeof(long);
-	}
-    }
-
-    /* status attributes */
-    for (i = 0; i < (int)call_data->status_attr_num; i++, sts_attr++) {
-	if (Is (XNArea, sts_attr)) {
-	    sts_attr->value = (void *)malloc(sizeof(XRectangle));
-	    *(XRectangle*)sts_attr->value = rec->sts_attr.area;
-	    sts_attr->value_length = sizeof(XRectangle);
-	
-	} else if (Is (XNAreaNeeded, sts_attr)) {
-	    sts_attr->value = (void *)malloc(sizeof(XRectangle));
-	    *(XRectangle*)sts_attr->value = rec->sts_attr.area_needed;
-	    sts_attr->value_length = sizeof(XRectangle);
-	
-	} else if (Is (XNFontSet, sts_attr)) {
-	    CARD16 base_len = (CARD16)strlen(rec->sts_attr.base_font);
-	    int total_len = sizeof(CARD16) + (CARD16)base_len;
-	    char *p;
-
-	    sts_attr->value = (void *)malloc(total_len);
-	    p = (char *)sts_attr->value;
-	    memmove(p, &base_len, sizeof(CARD16));
-	    p += sizeof(CARD16);
-	    strncpy(p, rec->sts_attr.base_font, base_len);
-	    sts_attr->value_length = total_len;
-	
-	} else if (Is (XNForeground, sts_attr)) {
-	    sts_attr->value = (void *)malloc(sizeof(long));
-	    *(long*)sts_attr->value = rec->sts_attr.foreground;
-	    sts_attr->value_length = sizeof(long);
-	
-	} else if (Is (XNBackground, sts_attr)) {
-	    sts_attr->value = (void *)malloc(sizeof(long));
-	    *(long*)sts_attr->value = rec->sts_attr.background;
-	    sts_attr->value_length = sizeof(long);
-	
-	} else if (Is (XNLineSpace, sts_attr)) {
-	    sts_attr->value = (void *)malloc(sizeof(long));
-#if 0
-	    *(long*)sts_attr->value = rec->sts_attr.line_space;
-#endif
-	    *(long*)sts_attr->value = 18;
-	    sts_attr->value_length = sizeof(long);
-	}
-    }
 }

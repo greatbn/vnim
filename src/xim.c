@@ -35,6 +35,7 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <Xi18n.h>
 #include "locales.h"
 #include "wrapper.h"
+#include "IC.h"
 
 #define DEFAULT_IMNAME "vnim"
 #define PROG_NAME "Vietnam XIM"
@@ -174,12 +175,12 @@ Bool MyDestroyICHandler(XIMS ims, IMChangeICStruct *call_data)
 //     }
 //     return False;
 // }
-static Bool gIsPreeditShowing = False;
 
 static void IMPreeditDraw(XIMS ims, IMForwardEventStruct *call_data, const wchar_t * buffer)
 {
-    static int last_len = 0;
-    if (gIsPreeditShowing == False) {
+    IC* ic = FindIC(call_data->icid);
+    printf("id: %d, len = %d, enabled = %d\n",call_data->icid, ic->preedit_len, ic->preedit_enabled);
+    if (! ic->preedit_enabled) {
         printf("IMPreeditShow\n");
         IMPreeditCBStruct pcb;
 
@@ -189,87 +190,69 @@ static void IMPreeditDraw(XIMS ims, IMForwardEventStruct *call_data, const wchar
         pcb.icid              = call_data->icid;
         pcb.todo.return_value = 0;
         IMCallCallback (ims, (XPointer) & pcb);
-        gIsPreeditShowing = True;
-        last_len = 0;
+        ic->preedit_enabled = True;
+        ic->preedit_len = 0;
     }
-    
     IMPreeditCBStruct pcb;
     XIMText text;
     static XIMFeedback feedback[128] = {0};
-    
+    pcb.major_code = XIM_PREEDIT_DRAW;        
+    pcb.connect_id = call_data->connect_id;
+    pcb.icid = call_data->icid;
+    pcb.todo.draw.chg_first = 0;
+    pcb.todo.draw.chg_length = ic->preedit_len;
+    pcb.todo.draw.text = &text;
+    text.feedback = feedback;    
+    text.encoding_is_wchar = 0;
     
     if (buffer != NULL) {
     
         printf("IMPreeditDraw\n");
-        XIMText text;
         XTextProperty tp;
 
         unsigned int j, i, len;
         
-
         len = wcslen(buffer);
         printf("len = %d\n", len);
 
-        pcb.major_code = XIM_PREEDIT_DRAW;
-        pcb.connect_id = call_data->connect_id;
-        pcb.icid = call_data->icid;
-        
         pcb.todo.draw.caret = len;
-        pcb.todo.draw.chg_first = 0;
-        pcb.todo.draw.chg_length = last_len;
-        pcb.todo.draw.text = &text;
-        last_len = len;
+        ic->preedit_len = len;
 
         for (i = 0; i < len; i++) {
             feedback[i] = XIMUnderline;
         }
         feedback[len] = 0;
             
-        text.feedback = feedback;
-
         printf("preEditDraw\n");
         XwcTextListToTextProperty (ims->core.display,
                                      (wchar_t **)&buffer,
                                      1, XCompoundTextStyle, &tp);
-        text.encoding_is_wchar = 0;
-        text.length = strlen ((char*)tp.value);
-        
+        text.length = strlen ((char*)tp.value);        
         text.string.multi_byte = (char*)tp.value;
-        printf("length = %d %s\n",text.length, text.string.multi_byte);
         IMCallCallback (ims, (XPointer) &pcb);
         XFree (tp.value);
-    } else if (last_len > 0) {
+    } else if (ic->preedit_len > 0) {
             //these following code is used to clean preedit text
             printf("draw nothing\n");
-            pcb.major_code = XIM_PREEDIT_DRAW;
-            pcb.connect_id = call_data->connect_id;
-            pcb.icid = call_data->icid;        
             pcb.todo.draw.caret = 0;
-            pcb.todo.draw.chg_first = 0;
-            pcb.todo.draw.chg_length = last_len;
-            pcb.todo.draw.text = &text;
-                    
-            text.encoding_is_wchar = 0;
-            text.length = 0;
-            text.string.multi_byte = "";
             feedback[0] = 0;
-            text.feedback = feedback;
                     
+            text.length = 0;
+            text.string.multi_byte = "";                    
             IMCallCallback (ims, (XPointer) &pcb);
-            last_len = 0;
+            ic->preedit_len = 0;
     }
 }
 
 static void IMPreeditSoftHide(XIMS ims, IMForwardEventStruct* call_data){
-    if (gIsPreeditShowing) {
         IMPreeditDraw(ims, call_data, NULL);
-    }
 }
 
 static void IMPreeditHide (XIMS ims, IMForwardEventStruct *call_data) {
-    if (gIsPreeditShowing == True) {
+    IC* ic = FindIC(call_data->icid);
+    if (ic->preedit_enabled) {
+        IMPreeditSoftHide(ims, call_data);
         printf("IMPreeditHide\n");        
-        //IMPreeditDraw(ims, call_data, NULL);
         
         IMPreeditCBStruct pcb;
 
@@ -279,18 +262,15 @@ static void IMPreeditHide (XIMS ims, IMForwardEventStruct *call_data) {
         pcb.icid              = call_data->icid;
         pcb.todo.return_value = 0;
         IMCallCallback (ims, (XPointer) & pcb);
-        // IMPreeditEnd(ims, call_data);
-        gIsPreeditShowing = False;
+        // gIsPreeditShowing = False;
+        ic->preedit_enabled = False;
     }
 }
 
 void IMPreeditCommit(XIMS ims, IMForwardEventStruct *call_data, const wchar_t *buffer)
 {
-    //hide preedit text before doing commit
-    //IMPreeditHide(ims, call_data);
     IMPreeditSoftHide(ims,call_data);
-//    ims->sync =True;
-    //IMCommitStruct* commitInfo = (IMCommitStruct*)call_data;
+    
     IMCommitStruct commitInfo;
     XIMText text;
     XTextProperty tp;
@@ -305,8 +285,6 @@ void IMPreeditCommit(XIMS ims, IMForwardEventStruct *call_data, const wchar_t *b
     commitInfo.connect_id = call_data->connect_id;
     commitInfo.flag = XimLookupChars;
     commitInfo.commit_string = (unsigned char*)tp.value;
-    // ((IMCommitStruct*)call_data)->flag |= XimLookupChars; 
-	// ((IMCommitStruct*)call_data)->commit_string = (unsigned char *)tp.value;
     IMCommitString(ims, (XPointer)&commitInfo);
     XFree (tp.value);
     XIMCommitDone(); //callback
@@ -328,27 +306,8 @@ void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
             printf("PREEDIT_ACTION_COMMIT_FORWARD %d\n",call_data->sync_bit);
             ims->sync = True;
             IMPreeditCommit(ims, call_data, XIMGetPreeditText());
-            //sleep(3);
-            // IMSyncXlib(ims, (XPointer)call_data);
-// /            ims->sync =True;
-            // isPending = True;
-            // pendingEvent = (*call_data);
-            //int pending = XPending(ims->core.display);
-            //IMSyncXlib(ims, (XPointer)call_data);
-            //printf("pending = %d\n",pending);
-            //XSync(ims->core.display, False);
+
             Push(&(call_data->event));
-            //IMForwardEvent(ims, call_data);
-            // IMForwardEventStruct fe;
-            // fe.major_code = XIM_FORWARD_EVENT;
-            // fe.minor_code = 0;
-            // fe.icid = call_data->icid;
-            // fe.connect_id = call_data->connect_id;
-            // fe.sync_bit = 0;
-            // fe.serial_number = 0L;
-            // fe.event = call_data->event;            
-            // IMForwardEvent(ims, &fe);
-            printf("fw done\n");
             break;
         case PREEDIT_ACTION_FORWARD:
             printf("PREEDIT_ACTION_FORWARD\n");
@@ -374,39 +333,7 @@ Bool MyForwardEventHandler(XIMS ims, IMForwardEventStruct* call_data)
     	return True;
     }
 
-    // if (IsKey(ims, call_data, Conversion_Keys)) {
-    //     XTextProperty tp;
-    //     Display *display = ims->core.display;
-    //     /* char *text = "�o�O�@�� IM ���A��������"; */
-    //     char *text = "���üy";
-    //     char **list_return; /* [20]; */
-    //     int count_return; /* [20]; */
-
-    //     fprintf(stderr, "matching ctrl-k...\n");
-    //     XmbTextListToTextProperty(display, (char **)&text, 1,
-    //                 XCompoundTextStyle,
-    //                 &tp);
-
-    //     ((IMCommitStruct*)call_data)->flag |= XimLookupChars; 
-    //     ((IMCommitStruct*)call_data)->commit_string = (char *)tp.value;
-    //     fprintf(stderr, "commiting string...(%s)\n", tp.value);
-    //     IMCommitString(ims, (XPointer)call_data);
-    // #if 0
-    //     XmbTextPropertyToTextList(display, &tp, &list_return, &count_return);
-    //     fprintf(stderr, "converted back: %s\n", *list_return);
-    // #endif
-    //     XFree(tp.value); 
-    //     fprintf(stderr, "survived so far..\n");
-    //     }
-    //     else 
-    // if (IsKey(ims, call_data, Forward_Keys)) {
-    //     IMForwardEventStruct forward_ev = *((IMForwardEventStruct *)call_data);
-
-    //     fprintf(stderr, "Imidiate forward \n");
-    //     IMForwardEvent(ims, call_data);
-    // } else {
-    	ProcessKey(ims, call_data);
-    // }
+    ProcessKey(ims, call_data);
     return True;
 }
 
@@ -450,16 +377,12 @@ Bool MyProtoHandler(XIMS ims, IMProtocol* call_data)
 	return MyForwardEventHandler(ims, call_data);
       case XIM_SET_IC_FOCUS:
         fprintf(stderr, "XIM_SET_IC_FOCUS()\n");
-        //IMPreeditHide(ims,call_data);
         IMPreeditSoftHide(ims, call_data);
         XIMFocusIn();
 	    return True;
       case XIM_UNSET_IC_FOCUS:
         fprintf(stderr, "XIM_UNSET_IC_FOCUS:\n");
-        if (gIsPreeditShowing) {
-            IMPreeditCommit(ims, call_data, XIMGetPreeditText());
-            IMPreeditHide(ims,call_data);
-        }
+        IMPreeditHide(ims,call_data);
         XIMFocusOut();
 	    return True;
       case XIM_RESET_IC:

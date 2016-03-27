@@ -12,12 +12,6 @@
 #define NOTHING (0)
 
 static VNWord* sCurrentWord;
-// static UChar (*sWordTransformIndex)[2];
-// static int sWordTransformNumber;
-// static UChar (*sCharTransformIndex)[3];
-// static int sCharTransformNumber;
-// static UChar (*sCharConversionIndex)[3];
-// static int sCharConversionNumber;
 static UChar (*sRules)[2];
 static int sRulesNum;
 
@@ -66,35 +60,6 @@ int ViCanTransformWord(VNWord* vnWord) {
 int ViIsLatinChar(UChar keyCode) {
     return (keyCode >= VNCharA && keyCode <= VNCharZ);
 }
-
-/**
- * Check if this character can be used to transform other characters
- */
-// int ViIsCharTransformer(UChar keyCode) {
-//     int i;
-//     for (i = 0; i < sRulesNum; i++) {
-//          printf("checking char index %d\n",i);
-//         if ((*sTransformationRules->charShift)[i][0] == keyCode) {
-//             return VNTrue;
-//         }
-//     }
-    
-//     return VNFalse;
-// }
-
-/*
- * Check if this character can be used to transform a word
- */
-// int ViIsWordTransformer(UChar keyCode) {
-//     int i;
-//     for (i = 0; i < sTransformationRules->wordShiftNum; i++) {
-//         if ((*sTransformationRules->wordShift)[i][0] == keyCode) {
-//             return VNTrue;
-//         }            
-//     }
-    
-//     return VNFalse;
-// }
 
 /*
  * Check if this can be used to transform
@@ -279,32 +244,6 @@ void ViCorrection(VNWord* vnWord) {
     //     }
     // }
 }
-
-
-
-// int ViAppendWordVNChar(VNWord* vnWord, VNChar* vnChar) {
-//     if (vnWord->length >=WORD_MAX_LENGTH) {
-//         return VNFalse;
-//     }
-    
-//     vnWord->chars[vnWord->length++] = (*vnChar);
-//     return VNTrue;
-// }
-
-/*
- * Do transform a character
- */
-// int ViCharTransform(VNChar* vnChar, UChar transformInfo[3]) {
-//     if (vnChar->transform == transformInfo[1]) {
-//         //revert since this transform is already used
-//         vnChar->transform = IndexShift0;
-//         return REVERTED;
-//     } else {
-//         //do a transform overridely
-//         vnChar->transform = transformInfo[1];
-//         return PROCESSED;
-//     }    
-// }
 
 /*
  * find charset index of a character

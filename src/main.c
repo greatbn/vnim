@@ -96,6 +96,8 @@ void XIMCommitDone() {
 void XIMFocusIn() {
     printf("Focus In\n");
     ViResetEngine();
+    preEditLength = 0;
+    preEditText[0] = 0;
 }
 
 void XIMFocusOut() {
