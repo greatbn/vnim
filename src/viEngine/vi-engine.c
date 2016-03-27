@@ -391,10 +391,7 @@ void ViInitEngine() {
     sCurrentWord = (VNWord*)malloc(sizeof(VNWord));
     ViResetEngine();
     
-    //sRules = sTelexRules;
-    //sRulesNum = sTelexRulesNum;
-    sRules = sVNIRules;
-    sRulesNum = sVNIRulesNum;
+    SetInputEngine(TELEX_INPUT);
     
     //printf("sizeall %d, size 1 %d\n",sizeof sRules,sizeof(sRules[0]));
     printf("sRulesNum = %d\n",sRulesNum); 
@@ -404,6 +401,16 @@ void ViInitEngine() {
 void ViDestroyEngine() {
     free(sCurrentWord);
     sCurrentWord = NULL;
+}
+
+void SetInputEngine(int input) {
+    if (input == VNI_INPUT) {
+        sRules = sVNIRules;
+        sRulesNum = sVNIRulesNum;        
+    } else if (input == TELEX_INPUT) {
+        sRules = sTelexRules;
+        sRulesNum = sTelexRulesNum;        
+    }
 }
 
 void ViGetCurrentWord(wchar_t* outBuffer, int* outLength) {

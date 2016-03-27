@@ -15,7 +15,7 @@ sudo make install
 ```
 ## Usage
 
-Add the following lines to your ${HOME}/.profile or ${HOME}/.bashrc
+Add the following lines to your ${HOME}/.xprofile or ${HOME}/.bashrc
 ```bash
 export GTK_IM_MODULE=xim
 export XMODIFIERS=@im=vnim
