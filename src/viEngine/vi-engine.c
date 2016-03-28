@@ -227,22 +227,22 @@ int ViDoProcessAOE(VNWord* vnWord) {
 }
 
 void ViCorrection(VNWord* vnWord) {
-    // printf("ViCorrection\n");
+    printf("ViCorrection\n");
     //currently doing nothing
-    // int i;
-    // for (i=1; i< vnWord->length; i++) {        
-    //     VNChar* thisChar = &(vnWord->chars[i]);
-    //     VNChar* preChar = &(vnWord->chars[i-1]);
+    int i;
+    for (i=1; i< vnWord->length; i++) {        
+        VNChar* thisChar = &(vnWord->chars[i]);
+        VNChar* preChar = &(vnWord->chars[i-1]);
         
-    //     // check uo
-    //     if (preChar->origin == VNCharU && thisChar->origin == VNCharO) {
-    //         if (preChar->transform == IndexShift12 || thisChar->transform == IndexShift24) {
-    //             preChar->transform = IndexShift12;
-    //             thisChar->transform = IndexShift24;
-    //             printf("Corrected uo\n");
-    //         } 
-    //     }
-    // }
+    //     // check oa
+        if (preChar->origin == VNCharO && thisChar->origin == VNCharA) {
+            if (preChar->transform == IndexShift24) {
+                preChar->transform = IndexShift0;
+                thisChar->transform = IndexShift24;
+                printf("Corrected oa\n");
+            } 
+        }
+    }
 }
 
 /*
