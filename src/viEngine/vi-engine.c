@@ -66,8 +66,6 @@ int ViIsLatinChar(UChar keyCode) {
  */
 int ViIsATransformer(UChar keyCode) {
     // printf("ViIsATransformer\n");
-    //check if this keyCode is in the transformIndex
-    // return (ViIsCharTransformer(keyCode) || ViIsWordTransformer(keyCode));
     int i;
     for (i = 0; i < sRulesNum; i++) {
         if (sRules[i][0] == keyCode) {
@@ -81,42 +79,71 @@ int ViIsATransformer(UChar keyCode) {
 /**
  * Check if can handle this key or not
  */
-int ViProcessable(UChar keyCode) {
+VNBoolean ViProcessable(UChar keyCode) {
     return (ViIsLatinChar(keyCode) || ViIsATransformer(keyCode));        
 }
 
-/*
- * Do transform a character
- */
-int ViCharTransform(VNChar* vnChar, UChar transform) {
-    if (vnChar->transform == transform) {
-        //revert since this transform is already used
-        vnChar->transform = IndexShift0;
-        return REVERTED;
-    } else {
-        //do a transform overridely
-        vnChar->transform = transform;
-        return PROCESSED;
-    }    
-}
-
-/**
- *  Find & do a char transform
- */
-int ViDoCharTransform(VNWord* vnWord, UChar keyCode, UChar transform) {
+int ViDoCharRevert(VNWord* word, UChar keyCode, UChar transform) {
     int i;
-    for (i=vnWord->length -1; i>=0; i--) {
-        if (vnWord->chars[i].origin == keyCode) {
-            return ViCharTransform(&(vnWord->chars[i]), transform);
+    for (i=word->length -1; i>=0; i--) {
+        if (word->chars[i].origin == keyCode && word->chars[i].transform == transform) {
+            word->chars[i].transform = IndexShift0;
+            return REVERTED;
         }
     }
     return NOTHING;
 }
 
 /*
+ * Do transform a character
+ */
+
+int ViDoCharRevertTransform(VNWord* word, int transformsNum, UChar transformList[][2]) {
+    printf("ViDoCharRevertTransform\n");
+    int i,j;
+    //revert first
+    for (i =0; i<transformsNum; i++) {
+        if (ViDoCharRevert(word, transformList[i][0], transformList[i][1]))
+            return REVERTED;  //return false to let other handle the character
+    }
+    
+    //transform
+    for (i=word->length -1; i >=0; i--){
+        for (j=0; j < transformsNum; j++) {
+            if (word->chars[i].origin == transformList[j][0]) {
+                word->chars[i].transform = transformList[j][1];
+                printf("transformed %d\n", transformList[j][1]);
+                return PROCESSED;
+            }
+        }
+    }
+    
+    return NOTHING;
+}
+
+void ViCorrection(VNWord* vnWord) {
+    printf("ViCorrection\n");
+    //currently doing nothing
+    int i;
+    for (i=1; i< vnWord->length; i++) {        
+        VNChar* thisChar = &(vnWord->chars[i]);
+        VNChar* preChar = &(vnWord->chars[i-1]);
+        
+    //     // check oa
+        if (preChar->origin == VNCharU && thisChar->origin == VNCharA) {
+            if (thisChar->transform == IndexShift24) {
+                preChar->transform = IndexShift12;
+                thisChar->transform = IndexShift0;
+                printf("Corrected oa\n");
+            } 
+        }
+    }
+}
+
+/*
  * Apend a character into a word
  */
-int ViAppendWord(VNWord* vnWord, UChar keyCode, UChar transform, int capStatus) {
+VNBoolean ViAppendWord(VNWord* vnWord, UChar keyCode, UChar transform, int capStatus) {
     printf("ViAppendWord [%c]\n", keyCode);
     if ((vnWord->length >= WORD_MAX_LENGTH)) {
         return VNFalse;
@@ -131,43 +158,55 @@ int ViAppendWord(VNWord* vnWord, UChar keyCode, UChar transform, int capStatus) 
     return VNTrue;
 }
 
-int ViDoProcessOUW(VNWord* vnWord) {
+int ViDoProcessUO(VNWord* vnWord) {
     int i;
     //process u*o*
-    for (i=vnWord->length-1; i>=0; i--) {
-        if (vnWord->chars[i].origin == VNCharO) {
-            if (i>0 && vnWord->chars[i-1].origin == VNCharU) { //uo
-                if (vnWord->chars[i-1].transform == IndexShift12 && vnWord->chars[i].transform == IndexShift24) {
-                    //revert
-                    vnWord->chars[i-1].transform = IndexShift0;
-                    vnWord->chars[i].transform = IndexShift0;
-                    return REVERTED;
-                } else {
-                    // u*o*
-                    vnWord->chars[i-1].transform = IndexShift12;
-                    vnWord->chars[i].transform = IndexShift24;
-                    return PROCESSED;
-                }
-            } else { //o* only
-                return ViCharTransform(&(vnWord->chars[i]), IndexShift24);
+    for (i=vnWord->length-1; i>0; i--) {
+        if (vnWord->chars[i].origin == VNCharO && vnWord->chars[i-1].origin == VNCharU) {
+            if (vnWord->chars[i-1].transform == IndexShift12 && vnWord->chars[i].transform == IndexShift24) {
+                //revert
+                vnWord->chars[i-1].transform = IndexShift0;
+                vnWord->chars[i].transform = IndexShift0;
+                return REVERTED;
+            } else {
+                vnWord->chars[i-1].transform = IndexShift12;
+                vnWord->chars[i].transform = IndexShift24;
+                return PROCESSED;                
             }
-        } else if (vnWord->chars[i].origin == VNCharU) { //u only
-            return ViCharTransform(&(vnWord->chars[i]), IndexShift12); 
         }
     }
     return NOTHING;    
+}
+int ViDoProcessOUW(VNWord* vnWord) {
+    int i;
+    //process u*o*
+    switch (ViDoProcessUO(vnWord)){
+        case REVERTED:
+            return REVERTED;
+        case PROCESSED:
+            return PROCESSED;
+    }
+    
+    UChar params [][2]= {{VNCharO, IndexShift24},{VNCharU,IndexShift12}};
+    return ViDoCharRevertTransform(vnWord, 2, params);
 }
 
 /**
  * Do process w
  */
- int ViDoProcessW(VNWord* vnWord) {
+ VNBoolean ViDoProcessW(VNWord* vnWord) {
     printf("ViDoProcessW\n");
-     //revert u*o*
-    int retVal = ViDoProcessOUW(vnWord);
-    if (retVal != NOTHING) return retVal;
-     //process a
-    return ViDoCharTransform(vnWord, VNCharA, IndexShift24);     
+    //process u*o*
+    switch (ViDoProcessUO(vnWord)){
+        case REVERTED:
+            return REVERTED;
+        case PROCESSED:
+            return PROCESSED;
+    }
+    
+    //return ViDoCharTransform(vnWord, VNCharA, IndexShift24);
+    UChar params [][2] = {{VNCharO,IndexShift24},{VNCharU, IndexShift12},{VNCharA, IndexShift24}};
+    return ViDoCharRevertTransform(vnWord, 3, params);     
  }
  
 int ViDoProcessWFull(VNWord* vnWord, int capStatus) {
@@ -190,59 +229,26 @@ int ViDoProcessWFull(VNWord* vnWord, int capStatus) {
             } //endif
         }
             
-        int retVal = ViDoProcessW(vnWord);
-        if (retVal != NOTHING) {
-            return retVal;
-        } //endif
+        switch (ViDoProcessW(vnWord)){
+            case REVERTED:
+                return REVERTED;
+            case PROCESSED:
+                return PROCESSED;
+        }
     }
     
     if (ViAppendWord(vnWord, VNCharZero, IndexShift154, capStatus)) {
         return PROCESSED;
-    } else {
-        return NOTHING;
     } //endif
+    
+    return NOTHING;
 }
 
 int ViDoProcessAOE(VNWord* vnWord) {
     printf("ViDoProcessAOE\n");
-    int i;
-    //revert ^ first
-    for (i = vnWord->length -1; i>=0; i--) {
-        if (vnWord->chars[i].origin == VNCharA
-            || vnWord->chars[i].origin == VNCharO
-            || vnWord->chars[i].origin == VNCharE) {
-                if (vnWord->chars[i].transform == IndexShift12) {
-                    vnWord->chars[i].transform = IndexShift0;
-                    printf("reverted ^\n");
-                    return REVERTED;
-                }
-            }
-    } //end for
-    
-    int retVal = ViDoCharTransform(sCurrentWord, VNCharO, IndexShift12);
-    if (retVal != NOTHING) return retVal;
-    retVal = ViDoCharTransform(sCurrentWord, VNCharA, IndexShift12);
-    if (retVal != NOTHING) return retVal;
-    return ViDoCharTransform(sCurrentWord, VNCharE, IndexShift12);    
-}
 
-void ViCorrection(VNWord* vnWord) {
-    printf("ViCorrection\n");
-    //currently doing nothing
-    int i;
-    for (i=1; i< vnWord->length; i++) {        
-        VNChar* thisChar = &(vnWord->chars[i]);
-        VNChar* preChar = &(vnWord->chars[i-1]);
-        
-    //     // check oa
-        if (preChar->origin == VNCharO && thisChar->origin == VNCharA) {
-            if (preChar->transform == IndexShift24) {
-                preChar->transform = IndexShift0;
-                thisChar->transform = IndexShift24;
-                printf("Corrected oa\n");
-            } 
-        }
-    }
+    UChar params[][2] = {{VNCharA, IndexShift12},{VNCharO, IndexShift12},{VNCharE, IndexShift12}};
+    return ViDoCharRevertTransform(vnWord, 3, params);
 }
 
 /*
@@ -312,9 +318,9 @@ int ViDoWordTransform(VNWord *vnWord, UChar transform) {
             sCurrentWord->transform = transform;
             return PROCESSED;
         }
-    } else {
-        return NOTHING;
     }
+    
+    return NOTHING;
 }
 
 /*********************************************************/
@@ -402,7 +408,7 @@ int ViProcessKey(UChar keyCode, int capStatus) {
     printf("processing [%c]\n", keyCode);
     int i,j;
     
-    int retVal = NOTHING; 
+    int retVal = VNFalse; 
     switch (ViFindTriggerType(keyCode)) {
         case VNTriggerWFull:
             retVal = ViDoProcessWFull(sCurrentWord, capStatus);
@@ -411,17 +417,29 @@ int ViProcessKey(UChar keyCode, int capStatus) {
             retVal = ViDoProcessW(sCurrentWord);
             break;
         case VNTriggerA:
-            retVal = ViDoCharTransform(sCurrentWord, VNCharA, IndexShift12);
+        {
+            UChar params[][2] ={{VNCharA, IndexShift12}};
+            retVal = ViDoCharRevertTransform(sCurrentWord, 1, params);
             break;
+        }
         case VNTriggerD:
-            retVal = ViDoCharTransform(sCurrentWord, VNCharD, IndexShift2);
+        {
+            UChar params[][2] = {{VNCharD, IndexShift2}};
+            retVal = ViDoCharRevertTransform(sCurrentWord, 1, params);
             break;
+        }
         case VNTriggerE:
-            retVal = ViDoCharTransform(sCurrentWord, VNCharE, IndexShift12);
+        {
+            UChar params[][2] = {{VNCharE, IndexShift12}};
+            retVal = ViDoCharRevertTransform(sCurrentWord, 1, params);
             break;
+        }
         case VNTriggerO:
-            retVal = ViDoCharTransform(sCurrentWord, VNCharO, IndexShift12);
+        {
+            UChar params[][2] = {{VNCharO, IndexShift12}};
+            retVal = ViDoCharRevertTransform(sCurrentWord, 1, params);
             break;
+        }
         case VNTriggerS:
             retVal = ViDoWordTransform(sCurrentWord, IndexShift2);
             break;
@@ -444,8 +462,11 @@ int ViProcessKey(UChar keyCode, int capStatus) {
             retVal = ViDoProcessAOE(sCurrentWord);
             break;
         case VNTriggerAW:
-            retVal = ViDoCharTransform(sCurrentWord, VNCharA, IndexShift24);
+        {
+            UChar params[][2] = {{VNCharA, IndexShift24}};
+            retVal = ViDoCharRevertTransform(sCurrentWord, 1, params);
             break;
+        }
         case VNTriggerOUW:
             retVal = ViDoProcessOUW(sCurrentWord);
             break;

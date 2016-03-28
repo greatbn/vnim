@@ -6,6 +6,7 @@
 typedef unsigned char UChar;
 #define VNFalse (0)
 #define VNTrue (1)
+typedef int VNBoolean;
 
 #define TELEX_INPUT 0
 #define VNI_INPUT 1
