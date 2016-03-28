@@ -153,8 +153,6 @@ VNBoolean ViAppendWord(VNWord* vnWord, UChar keyCode, UChar transform, int capSt
     vnChar->origin = keyCode;
     vnChar->transform = transform;
     vnChar->isUpper = capStatus?(VNTrue):(VNFalse);
-    
-    ViCorrection(sCurrentWord);
     return VNTrue;
 }
 
@@ -472,7 +470,11 @@ int ViProcessKey(UChar keyCode, int capStatus) {
             break;
     }
     
-    return (retVal == PROCESSED || ViAppendWord(sCurrentWord, keyCode, IndexShift0, capStatus));
+    if (retVal != PROCESSED && ViAppendWord(sCurrentWord, keyCode, IndexShift0, capStatus)) {
+        retVal = PROCESSED;
+    }
+    ViCorrection(sCurrentWord);
+    return retVal;
 }
 
 /*
