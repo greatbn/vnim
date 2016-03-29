@@ -108,7 +108,7 @@ int ViDoCharRevertTransform(VNWord* word, int transformsNum, UChar transformList
     }
     
     //transform
-    for (i=word->length -1; i >=0; i--){
+    for (i=word->length -1; i > word->wordBreak; i--){
         for (j=0; j < transformsNum; j++) {
             if (word->chars[i].origin == transformList[j][0]) {
                 word->chars[i].transform = transformList[j][1];
@@ -159,14 +159,14 @@ VNBoolean ViAppendWord(VNWord* vnWord, UChar keyCode, UChar transform, int capSt
 int ViDoProcessUO(VNWord* vnWord) {
     int i;
     //process u*o*
-    for (i=vnWord->length-1; i>0; i--) {
+    for (i=vnWord->length-1; i > 0; i--) {
         if (vnWord->chars[i].origin == VNCharO && vnWord->chars[i-1].origin == VNCharU) {
             if (vnWord->chars[i-1].transform == IndexShift12 && vnWord->chars[i].transform == IndexShift24) {
                 //revert
                 vnWord->chars[i-1].transform = IndexShift0;
                 vnWord->chars[i].transform = IndexShift0;
                 return REVERTED;
-            } else {
+            } else if (i > vnWord->wordBreak) {
                 vnWord->chars[i-1].transform = IndexShift12;
                 vnWord->chars[i].transform = IndexShift24;
                 return PROCESSED;                
@@ -212,7 +212,7 @@ int ViDoProcessWFull(VNWord* vnWord, int capStatus) {
     int i;
     if (vnWord->length > 0) {
         //revert w->u* first
-        for (i = vnWord->length -1; i>=0; i--) {
+        for (i = vnWord->length -1; i >= 0; i--) {
             VNChar* lastChar = &(vnWord->chars[i]);
             if (lastChar->origin == VNCharZero) {
                 if (vnWord->transform == IndexShift0 && i == vnWord->length-1) {
@@ -321,6 +321,14 @@ int ViDoWordTransform(VNWord *vnWord, UChar transform) {
     return NOTHING;
 }
 
+void ViUpdateWordBreak(VNWord *word) {
+    int i = word->length-1;
+    while (i >= 0 && !ViIsVowel(word->chars[i--].origin));
+    while (i >= 0 && ViIsVowel(word->chars[i--].origin));
+    word->wordBreak = i;
+    printf("wordBreak = %d\n",word->wordBreak);
+}
+
 /*********************************************************/
 //public methods
 /*********************************************************/
@@ -404,6 +412,7 @@ int ViProcessKey(UChar keyCode, int capStatus) {
     }
     
     printf("processing [%c]\n", keyCode);
+    ViUpdateWordBreak(sCurrentWord);
     int i,j;
     
     int retVal = VNFalse; 

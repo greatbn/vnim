@@ -3,19 +3,6 @@
 
 #include "vi-engine.h"
 
-// #define CharTransform0 (0) //
-// #define CharTransform1 (1) //a^, e^, o^, d+, u*
-// #define CharTransform2 (2) //a(, o*
-// #define CharTransformMax (3)
-
-// #define WordTransform0 (0) //z
-// #define WordTransform1 (1) //s
-// #define WordTransform2 (2) //f
-// #define WordTransform3 (3) //r
-// #define WordTransform4 (4) //x 
-// #define WordTransform5 (5) //j
-// #define WordTransformMax (6)
-
 #define VNCharA ('a')
 #define VNCharD ('d')
 #define VNCharE ('e')
@@ -45,6 +32,7 @@ typedef struct {
     VNChar chars[WORD_MAX_LENGTH + 1];
     UChar transform;
     int length;
+    int wordBreak;
 } VNWord;
 
 #define IndexShift0 (0)
