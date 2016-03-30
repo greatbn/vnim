@@ -31,7 +31,7 @@ autoconf, automake, gnome-common are required to compile.
 - Use vnim-xim --vni: To start VNIM using VNI input method
 - Uses Ctrl + Shift or Alt + Z to switch between English & Vietnamese modes
  
-## TODO
+## Todo
 
 ### v0.1.0
 - [x] Support VNI
