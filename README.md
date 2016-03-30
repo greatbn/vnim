@@ -1,10 +1,10 @@
 # A Vietnamese Input Method
 
-A Vietnamese input method using for X-Windows using XIM. 
+A Vietnamese input method for X-Windows using XIM. 
 
 ## Requirements
 
-autoconf, automake, gnome-common are required to compile. 
+autoconf, automake, gnome-common, x11-dev are required to compile. 
 
 ## Installation
 
