@@ -38,7 +38,6 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include "IC.h"
 
 #define DEFAULT_IMNAME "vnim"
-#define PROG_NAME "Vietnam XIM"
 
 /* Supported Inputstyles */
 static XIMStyle Styles[] = {
@@ -457,39 +456,12 @@ void MyXEventHandler(Window im_window, XEvent *event)
     }
 }
 
-int InitXIM() {
-    Window imWindow;    
-    char *display_name = NULL;
-    Display *dpy;
+void InitXIM(Display* dpy, Window* imWindow) {    
     char *imname = DEFAULT_IMNAME;
     XIMStyles *input_styles/*, *styles2*/;
     //XIMTriggerKeys *on_keys, *trigger2;
     XIMEncodings *encodings/*, *encoding2*/;
     register int i;
-    char transport[80];		/* enough */
-
-    if (!setlocale(LC_CTYPE, "en_US.UTF-8") && !setlocale(LC_CTYPE, "vi_VN.UTF-8")) {
-        fputs("Cannot load either en_US.UTF-8 or vi_VN.UTF-8 locale\n"
-              "To use this program you must have one of these locales installed\n", stderr);
-        exit(1);
-    }
-    
-    if ((dpy = XOpenDisplay(display_name)) == NULL) {
-	    fprintf(stderr, "Can't Open Display: %s\n", display_name);
-	    exit(1);
-    }
-    
-    imWindow = XCreateSimpleWindow(dpy, DefaultRootWindow(dpy),
-				    0, 700, 400, 800-700,
-				    0, WhitePixel(dpy, DefaultScreen(dpy)),
-				    WhitePixel(dpy, DefaultScreen(dpy)));
-
-    if (imWindow == (Window)NULL) {
-	    fprintf(stderr, "Can't Create Window\n");
-	    exit(1);
-    }
-    XStoreName(dpy, imWindow, PROG_NAME);
-    XSetTransientForHint(dpy, imWindow, imWindow);
 
     if ((input_styles = (XIMStyles *)malloc(sizeof(XIMStyles))) == NULL) {
 	    fprintf(stderr, "Can't allocate\n");
@@ -507,16 +479,17 @@ int InitXIM() {
     
     ims = IMOpenIM(dpy,
 		   IMModifiers, "Xi18n",
-		   IMServerWindow, imWindow,
+		   IMServerWindow, *imWindow,
 		   IMServerName, imname,
 		   IMLocale, LOCALES_STRING,
 		   IMServerTransport, "X/",
 		   IMInputStyles, input_styles,
 		   NULL);
+           
     if (ims == (XIMS)NULL) {
         fprintf(stderr, "Can't Open Input Method Service:\n");
-        fprintf(stderr, "\tInput Method Name :%s\n", imname);
-        fprintf(stderr, "\tTranport Address:%s\n", transport);
+        fprintf(stderr, "\tInput Method Name :%s\n", *imname);
+        fprintf(stderr, "\tTranport Address: X/\n");
         exit(1);
     }
 
@@ -524,18 +497,5 @@ int InitXIM() {
 		  IMEncodingList, encodings,
 		  IMProtocolHandler, MyProtoHandler,
 		  IMFilterEventMask, KeyPressMask,
-		  NULL);
-
-    XSelectInput(dpy, imWindow, StructureNotifyMask|ButtonPressMask);
-    // XMapWindow(dpy, im_window);
-    XFlush(dpy);
-    
-    while (1) {
-        XEvent event;
-        XNextEvent(dpy, &event);
-        if (XFilterEvent(&event, None) == True) {
-            continue;
-        }
-        MyXEventHandler(imWindow, &event);
-    }           
+		  NULL);         
 }

@@ -20,4 +20,7 @@ void XIMResetFocus();
 const wchar_t* XIMGetPreeditText();
 int XIMProcessKey(XKeyEvent * keyEvent);
 
+//X11 functions
+void InitXIM(Display* dpy, Window* wnd);
+
 #endif //__WRAPPER_H__

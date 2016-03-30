@@ -2,6 +2,7 @@ bin_PROGRAMS = vnim-xim
 vnim_xim_SOURCES = \
 	main.c \
     IC.c \
+    wrapper.c \
     xim.c \
 	$(NULL)
     

@@ -1,118 +1,16 @@
 #include <stdio.h>
 #include <stddef.h>
-// #include <X11/Xlocale.h>
+#include <X11/Xlocale.h>
 // #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/keysym.h>
 // #include "IMdkit.h"
     // #include <Xi18n.h>
+#include "locales.h"
 #include "wrapper.h"
 #include "vi-engine.h"
 
-#define BUFFER_LENTH 1024
-static wchar_t preEditText[BUFFER_LENTH];
-static int preEditLength = 0;
-static Bool engineEnabled = False;
-
-const wchar_t * XIMGetPreeditText() {
-    return (preEditLength > 0)?preEditText:NULL;
-}
-
-#define STRBUFLEN 64
-int XIMProcessKey(XKeyEvent * keyEvent) {
-    // printf("ProcessKey\n");
-    static char strbuf[STRBUFLEN];
-    static unsigned char keyval;
-    static KeySym keysym;
-    int count;
-
-    memset(strbuf, 0, STRBUFLEN);
-    count = XLookupString(keyEvent, strbuf, STRBUFLEN, &keysym, NULL);
-    printf("XIMProcessKey keysym = %d, keycode = %d, modifiers = %d\n",keysym,keyEvent->keycode, keyEvent->state);    
-    
-    if ((keyEvent->state & ControlMask) || (keyEvent->state & Mod1Mask)) {
-        printf("This is a special key or hot key\n");
-        if ((keyEvent->state & ControlMask) && (keysym == XK_Shift_L)
-            || (keyEvent->state & Mod1Mask) && (keysym == XK_z) ){
-            engineEnabled = (engineEnabled == True)?False:True;
-            printf("engineEnabled: %d\n", engineEnabled); 
-        }
-        
-        return PREEDIT_ACTION_COMMIT_FORWARD;
-    }
-    
-    if (! engineEnabled) {
-        return PREEDIT_ACTION_FORWARD;        
-    }    
-        
-    if (keysym == XK_BackSpace && preEditLength > 0) {
-        printf("backspace pressed\n");
-        
-        //preediting
-        ViProcessBackspace();
-        ViGetCurrentWord(preEditText, &preEditLength);
-        
-        if (preEditLength > 0) {
-            return PREEDIT_ACTION_DRAW;
-        } else {
-            return PREEDIT_ACTION_DISCARD;
-        }
-    } else if (keysym == XK_Shift_L || keysym == XK_Shift_R) {
-        //ignore shift
-        return PREEDIT_ACTION_NONE;
-    } else if (count > 0) {
-        keyval = strbuf[0]; 
-        if (keyval >=' ' && keyval <= '~' ) {
-            printf("processKey [%c]. shift %d, caplock %d\n", keyval, keyEvent->state & ShiftMask, keyEvent->state & LockMask);
-            if (ViProcessKey(keyval, ((keyEvent->state & ShiftMask) > 0) != ((keyEvent->state & LockMask) > 0))){
-                ViGetCurrentWord(preEditText, &preEditLength);
-                return PREEDIT_ACTION_DRAW;
-            } else {
-                ViGetCurrentWord(preEditText, &preEditLength);
-            }
-        }
-    }
-
-    return PREEDIT_ACTION_COMMIT_FORWARD;
-}
-
-void EngineReset() {
-    ViResetEngine();
-    preEditLength = 0;
-    preEditText[0] = 0;    
-}
-
-void XIMCommitDone() {
-    printf("XIMCommitDone\n");
-    EngineReset();
-}
-
-void XIMFocusIn() {
-    printf("Focus In\n");
-    EngineReset();
-}
-
-void XIMFocusOut() {
-    printf("Focus out\n");
-    EngineReset();
-}
-
-void XIMResetFocus() {
-    printf("XIMResetFocus\n");
-    EngineReset();
-}
-
-void XIMInit() {
-    ViInitEngine();
-    engineEnabled = True;
-}
-
-void XIMDestroy() {
-    EngineReset();
-    ViDestroyEngine();
-}
-
-extern void InitXIM();
+#define PROG_NAME "Vietnam XIM"
 
 int main(int argc, char** argv) {
     int inputEngine = TELEX_INPUT;
@@ -144,5 +42,45 @@ int main(int argc, char** argv) {
     
     XIMInit();
     SetInputEngine(inputEngine);
-    InitXIM();
+    
+    Display *dpy;    
+   Window imWindow;
+    if (!setlocale(LC_CTYPE, "en_US.UTF-8") && !setlocale(LC_CTYPE, "vi_VN.UTF-8")) {
+        fputs("Cannot load either en_US.UTF-8 or vi_VN.UTF-8 locale\n"
+              "To use this program you must have one of these locales installed\n", stderr);
+        exit(1);
+    }
+        
+    if ((dpy = XOpenDisplay(NULL)) == NULL) {
+	    fprintf(stderr, "Can't Open Display\n");
+	    exit(1);
+    }
+    
+    imWindow = XCreateSimpleWindow(dpy, DefaultRootWindow(dpy),
+				    0, 700, 400, 800-700,
+				    0, WhitePixel(dpy, DefaultScreen(dpy)),
+				    WhitePixel(dpy, DefaultScreen(dpy)));
+
+    if (imWindow == (Window)NULL) {
+	    fprintf(stderr, "Can't Create Window\n");
+	    exit(1);
+    }
+    
+    XStoreName(dpy, imWindow, PROG_NAME);
+    XSetTransientForHint(dpy, imWindow, imWindow);   
+    
+    InitXIM(dpy, &imWindow);
+        
+    XSelectInput(dpy, imWindow, StructureNotifyMask|ButtonPressMask);
+    // XMapWindow(dpy, im_window);
+    XFlush(dpy);
+    
+    while (1) {
+        XEvent event;
+        XNextEvent(dpy, &event);
+        if (XFilterEvent(&event, None) == True) {
+            continue;
+        }
+        MyXEventHandler(imWindow, &event);
+    }          
 }
