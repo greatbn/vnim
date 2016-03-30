@@ -1,6 +1,6 @@
 # A Vietnamese Input Method
 
-A Vietnamese input method for X-Windows using XIM. 
+A Vietnamese input method for X-Windows using XIM. To process Vietnamese characters, it uses [viEngine](src/viEngine/README.md).
 
 ## Requirements
 
@@ -28,7 +28,7 @@ autoconf, automake, gnome-common, x11-dev are required to compile.
 
 ## Usage
 
-- Use vnim-xim --vni: To start VNIM using VNI input method
+- Use "_vnim-xim --vni_" To start VNIM using VNI input method
 - Uses Ctrl + Shift or Alt + Z to switch between English & Vietnamese modes
  
 ## Todo
