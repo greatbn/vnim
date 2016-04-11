@@ -6,9 +6,9 @@ A Vietnamese input method for X-Windows using XIM. To process Vietnamese charact
 
 gnome-common are required to compile.
 
-    ```bash
-    sudo apt-get install gnome-common
-    ``` 
+```bash
+sudo apt-get install gnome-common
+``` 
 
 ## Installation
 
