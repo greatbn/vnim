@@ -1,10 +1,14 @@
 # A Vietnamese Input Method
 
-A Vietnamese input method for X-Windows using XIM. To process Vietnamese characters, it uses [viEngine](src/viEngine/README.md).
+A Vietnamese input method for X-Windows using XIM. To process Vietnamese characters, it uses [viEngine](src/viEngine/README.md). 
 
 ## Requirements
 
-autoconf, automake, gnome-common, x11-dev are required to compile. 
+gnome-common are required to compile.
+
+    ```bash
+    sudo apt-get install gnome-common
+    ``` 
 
 ## Installation
 
@@ -18,17 +22,18 @@ autoconf, automake, gnome-common, x11-dev are required to compile.
 
 2. Config
 
-    Add the following lines to your ${HOME}/.xprofile or ${HOME}/.bashrc
+    Add the following lines to your ${HOME}/.xprofile or ${HOME}/.xinputrc
     ```bash
     export GTK_IM_MODULE=xim
     export XMODIFIERS=@im=vnim
     export QT_IM_MODULE=xim
-    vnim-xim &
+    vnim &
     ```
 
 ## Usage
 
-- Use "_vnim-xim --vni_" To start VNIM using VNI input method
+- vnim --vni: To start VNIM using VNI input
+- vnim --verbose: To enable log
 - Uses Ctrl + Shift or Alt + Z to switch between English & Vietnamese modes
  
 ## Todo
