@@ -34,7 +34,8 @@ sudo apt-get install gnome-common
 
 - vnim --vni: To start VNIM using VNI input
 - vnim --verbose: To enable log
-- Uses Ctrl + Shift or Alt + Z to switch between English & Vietnamese modes
+- vnim --silent: To start VNIM with engine disabled
+- Uses Ctrl + Shift or Alt + Z to enable/disable engine
  
 ## TODO
 
