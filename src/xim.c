@@ -302,6 +302,7 @@ Bool IMPreeditCommit(XIMS ims, IMForwardEventStruct *call_data, const wchar_t *b
 
 void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
 {
+    static wchar_t *buffer;
     //IMPreeditHide(ims, call_data);    
     switch (XIMProcessKey((XKeyEvent*)&call_data->event)) {
         case PREEDIT_ACTION_DRAW:
@@ -313,12 +314,14 @@ void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
             IMPreeditCommit(ims, call_data, XIMGetPreeditText());
             break;
         case PREEDIT_ACTION_COMMIT_FORWARD:
+            buffer = XIMGetPreeditText();
             printf("PREEDIT_ACTION_COMMIT_FORWARD %d\n",call_data->sync_bit);
-            ims->sync = True;
-            if (IMPreeditCommit(ims, call_data, XIMGetPreeditText())){
-                //only queue if this is a commit success
-                Push(&(call_data->event));                
+            if (buffer != NULL) {
+                ims->sync = True;
+                IMPreeditCommit(ims, call_data, buffer);
+                Push(&(call_data->event));
             } else {
+                printf("IMForwardEvent only\n");
                 IMForwardEvent(ims, call_data);
             }
             break;

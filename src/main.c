@@ -18,6 +18,14 @@ const wchar_t * XIMGetPreeditText() {
     return (preEditLength > 0)?preEditText:NULL;
 }
 
+void ProcessHotKey(XKeyEvent * keyEvent, KeySym keysym) {
+    if (((keyEvent->state & ControlMask) && (keysym == XK_Shift_L))
+        || ((keyEvent->state & Mod1Mask) && (keysym == XK_z))) {
+            engineEnabled = (engineEnabled == True)?False:True;
+            printf("engineEnabled: %d\n", engineEnabled);             
+        }
+}
+
 #define STRBUFLEN 64
 int XIMProcessKey(XKeyEvent * keyEvent) {
     // printf("ProcessKey\n");
@@ -25,25 +33,21 @@ int XIMProcessKey(XKeyEvent * keyEvent) {
     static unsigned char keyval;
     static KeySym keysym;
     int count;
-
+    
     memset(strbuf, 0, STRBUFLEN);
     count = XLookupString(keyEvent, strbuf, STRBUFLEN, &keysym, NULL);
-    printf("XIMProcessKey keysym = %d, keycode = %d, modifiers = %d\n",keysym,keyEvent->keycode, keyEvent->state);    
+    printf("XIMProcessKey keysym = %d, keycode = %d, modifiers = %d\n",keysym,keyEvent->keycode, keyEvent->state);
+        
+    ProcessHotKey(keyEvent, keysym);
+    
+    if (! engineEnabled) {
+        return PREEDIT_ACTION_COMMIT_FORWARD;        
+    }
     
     if ((keyEvent->state & ControlMask) || (keyEvent->state & Mod1Mask)) {
         printf("This is a special key or hot key\n");
-        if ((keyEvent->state & ControlMask) && (keysym == XK_Shift_L)
-            || (keyEvent->state & Mod1Mask) && (keysym == XK_z) ){
-            engineEnabled = (engineEnabled == True)?False:True;
-            printf("engineEnabled: %d\n", engineEnabled); 
-        }
-        
         return PREEDIT_ACTION_COMMIT_FORWARD;
     }
-    
-    if (! engineEnabled) {
-        return PREEDIT_ACTION_FORWARD;        
-    }    
         
     if (keysym == XK_BackSpace && preEditLength > 0) {
         printf("backspace pressed\n");
