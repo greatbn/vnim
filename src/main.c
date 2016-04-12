@@ -12,7 +12,7 @@
 #define BUFFER_LENTH 1024
 static wchar_t preEditText[BUFFER_LENTH];
 static int preEditLength = 0;
-static Bool engineEnabled = False;
+static Bool engineEnabled = True;
 
 const wchar_t * XIMGetPreeditText() {
     return (preEditLength > 0)?preEditText:NULL;
@@ -104,7 +104,7 @@ void XIMResetFocus() {
 
 void XIMInit() {
     ViInitEngine();
-    engineEnabled = True;
+    //engineEnabled = True;
 }
 
 void XIMDestroy() {
@@ -123,8 +123,8 @@ int main(int argc, char** argv) {
 	        inputEngine = VNI_INPUT;
 	    } else if (!strcmp(argv[i], "--verbose")) {
 	        enableVerbose = True;
-	// } else if (!strcmp(argv[i], "-dynamic")) {
-	//     use_trigger = True;
+        } else if (!strcmp(argv[i], "--silent")) {
+            engineEnabled = False;
 	// } else if (!strcmp(argv[i], "-static")) {
 	//     use_trigger = False;
 	// } else if (!strcmp(argv[i], "-tcp")) {

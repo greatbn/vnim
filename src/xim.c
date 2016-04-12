@@ -336,19 +336,19 @@ void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
     XSync(ims->core.display, False);    
 }
 
-Bool MyForwardEventHandler(XIMS ims, IMForwardEventStruct* call_data)
-{
-    printf("IMForwardEventStruct\n");
-    /* Lookup KeyPress Events only */
-    // fprintf(stderr, "ForwardEventHandler\n");
-    if (call_data->event.type != KeyPress) {
-        fprintf(stderr, "bogus event type, ignored\n");
-    	return True;
-    }
+// Bool MyForwardEventHandler(XIMS ims, IMForwardEventStruct* call_data)
+// {
+//     printf("IMForwardEventStruct\n");
+//     /* Lookup KeyPress Events only */
+//     // fprintf(stderr, "ForwardEventHandler\n");
+//     if (call_data->event.type != KeyPress) {
+//         fprintf(stderr, "bogus event type, ignored\n");
+//     	return True;
+//     }
 
-    ProcessKey(ims, call_data);
-    return True;
-}
+//     ProcessKey(ims, call_data);
+//     return True;
+// }
 
 Bool MyTriggerNotifyHandler(XIMS ims, IMTriggerNotifyStruct* call_data)
 {
@@ -387,7 +387,8 @@ Bool MyProtoHandler(XIMS ims, IMProtocol* call_data)
         printf("XIM_GET_IC_VALUES:\n");
 	    return MyGetICValuesHandler(ims, call_data);
       case XIM_FORWARD_EVENT:
-	    return MyForwardEventHandler(ims, call_data);
+	    ProcessKey(ims, call_data);
+        return True;
       case XIM_SET_IC_FOCUS:
         printf("XIM_SET_IC_FOCUS()\n");
         IMPreeditSoftHide(ims, call_data);
@@ -425,7 +426,7 @@ Bool MyProtoHandler(XIMS ims, IMProtocol* call_data)
                 IMForwardEventStruct* fwdata = (IMForwardEventStruct*)call_data;
                 fwdata->event = event;
                 IMForwardEvent(ims, fwdata);
-            }            
+            }
             return True;
       default:
 	    fprintf(stderr, "Unknown IMDKit Protocol message type %d\n", call_data->major_code);
