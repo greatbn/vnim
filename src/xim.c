@@ -332,7 +332,7 @@ void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
             break;
         case PREEDIT_ACTION_DISCARD:
             printf("PREEDIT_ACTION_DISCARD\n");
-            IMPreeditSoftHide(ims, call_data);
+            IMPreeditCommit(ims, call_data, "");
             break;
     }
         

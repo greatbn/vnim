@@ -67,7 +67,7 @@ int XIMProcessKey(XKeyEvent * keyEvent) {
         ViProcessBackspace();
         ViGetCurrentWord(preEditText, &preEditLength);
         
-        return PREEDIT_ACTION_DRAW;
+        return (preEditLength > 0)?PREEDIT_ACTION_DRAW:PREEDIT_ACTION_DISCARD;
     } else if (keysym == XK_Shift_L || keysym == XK_Shift_R) {
         //ignore shift
         return PREEDIT_ACTION_NONE;
