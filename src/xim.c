@@ -527,7 +527,7 @@ int InitXIM() {
     IMSetIMValues(ims,
 		  IMEncodingList, encodings,
 		  IMProtocolHandler, MyProtoHandler,
-		  IMFilterEventMask, KeyPressMask,
+		  IMFilterEventMask, KeyPressMask|KeyReleaseMask,
 		  NULL);
 
     XSelectInput(dpy, imWindow, StructureNotifyMask|ButtonPressMask);
