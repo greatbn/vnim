@@ -112,7 +112,7 @@ int ViDoCharRevertTransform(VNWord* word, int transformsNum, UChar transformList
         for (j=0; j < transformsNum; j++) {
             if (word->chars[i].origin == transformList[j][0]) {
                 word->chars[i].transform = transformList[j][1];
-                printf("transformed %d\n", transformList[j][1]);
+                // printf("transformed %d\n", transformList[j][1]);
                 return PROCESSED;
             }
         }
@@ -393,7 +393,13 @@ void ViGetCurrentWord(wchar_t* outBuffer, int* outLength) {
                     if (i > 1 && sCurrentWord->chars[i-2].origin == VNCharQ && sCurrentWord->chars[i-1].origin == VNCharU) {
                         wordTransformShift = sCurrentWord->transform;
                     }
+                    
+                    //ue
+                    if (sCurrentWord->chars[i-1].origin == VNCharU && sCurrentWord->chars[i].origin == VNCharE) {
+                        wordTransformShift = sCurrentWord->transform;
+                    }
                 }
+                
                 if (wordTransformShift > 0) {
                     needWordTransform = VNFalse; //word is transformed
                 }
