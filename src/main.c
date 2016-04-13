@@ -20,14 +20,22 @@ const wchar_t * XIMGetPreeditText() {
 
 void ProcessHotKey(XKeyEvent * keyEvent, KeySym keysym) {
     static int triggerNum = 0;
-    if (triggerNum == 0 && (keyEvent->type == KeyPress) && (keysym == XK_Control_L || keysym ==  XK_Alt_L)) {
+    if (triggerNum == 0 && (keyEvent->type == KeyPress) && (keysym == XK_Control_L)) {
         triggerNum = 1;
-    } else if (triggerNum == 1 && (keyEvent->type == KeyPress) && (keysym == XK_Shift_L || keysym == XK_z)) {
+    } else if (triggerNum == 1 && (keyEvent->type == KeyPress) && (keysym == XK_Shift_L)) {
         triggerNum = 2;
     } else if (triggerNum == 2 && (keyEvent->type == KeyRelease)) {
         engineEnabled = (engineEnabled == True)?False:True;
-        printf("engineEnabled: %d\n", engineEnabled);
+        printf("engineEnabled: %d, %d\n", engineEnabled, triggerNum);
         triggerNum = 0;
+	} else if (triggerNum == 0 && (keyEvent->type == KeyPress) && (keysym ==  XK_Alt_L)) {
+	    triggerNum = 11;
+	} else if (triggerNum == 11 && (keyEvent->type == KeyPress) && (keysym == XK_z)) {
+		triggerNum = 12;
+	} else if (triggerNum == 12 && keyEvent->type == KeyRelease) {
+        engineEnabled = (engineEnabled == True)?False:True;
+        printf("engineEnabled: %d, %d\n", engineEnabled,triggerNum);
+        triggerNum = 0;		
     } else {
         triggerNum = 0;
     }
@@ -47,17 +55,18 @@ int XIMProcessKey(XKeyEvent * keyEvent) {
         
     ProcessHotKey(keyEvent, keysym);
     
-    if (! engineEnabled) {
+    if ((!engineEnabled)
+        || (keyEvent->state & ControlMask)
+        || (keyEvent->state & Mod1Mask)) {
+        printf("special key or engine disabled\n");
         return PREEDIT_ACTION_COMMIT_FORWARD;        
     }
         
-    if ((keyEvent->state & ControlMask) || (keyEvent->state & Mod1Mask)) {
-        printf("This is a special key or hot key\n");
-        return PREEDIT_ACTION_COMMIT_FORWARD;
-    }
-    
-    if (keyEvent->type != KeyPress) {
-        return PREEDIT_ACTION_NONE;
+    if (keyEvent->type != KeyPress
+        || keysym == XK_Shift_L
+        || keysym == XK_Shift_R) {
+            printf("ignore shift, key release event\n");
+        return PREEDIT_ACTION_FORWARD;
     }
             
     if (keysym == XK_BackSpace && preEditLength > 0) {
@@ -68,9 +77,6 @@ int XIMProcessKey(XKeyEvent * keyEvent) {
         ViGetCurrentWord(preEditText, &preEditLength);
         
         return (preEditLength > 0)?PREEDIT_ACTION_DRAW:PREEDIT_ACTION_DISCARD;
-    } else if (keysym == XK_Shift_L || keysym == XK_Shift_R) {
-        //ignore shift
-        return PREEDIT_ACTION_NONE;
     } else if (count > 0) {
         keyval = strbuf[0]; 
         if (keyval >=' ' && keyval <= '~' ) {

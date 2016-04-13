@@ -327,7 +327,7 @@ void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
             break;
         case PREEDIT_ACTION_FORWARD:
             printf("PREEDIT_ACTION_FORWARD\n");
-            IMPreeditSoftHide(ims, call_data);
+//            IMPreeditSoftHide(ims, call_data);
             IMForwardEvent(ims, call_data);
             break;
         case PREEDIT_ACTION_DISCARD:
