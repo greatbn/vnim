@@ -51,30 +51,6 @@ static XIMStyle Styles[] = {
     0
 };
 
-// IMForwardEventStruct pendingEvent;
-// Bool isPending = False;
-
-// static XIMStyle Styles[] = {
-//     XIMPreeditCallbacks|XIMStatusCallbacks,
-//     XIMPreeditPosition|XIMStatusArea,
-//     XIMPreeditPosition|XIMStatusNothing,
-//     XIMPreeditArea|XIMStatusArea,
-//     XIMPreeditNothing|XIMStatusNothing,
-//     0
-// };
-
-/* Trigger Keys List */
-// static XIMTriggerKey Trigger_Keys[] = {
-//     {XK_space, ShiftMask, ShiftMask},
-//     {0L, 0L, 0L}
-// };
-
-/* Conversion Keys List */
-// static XIMTriggerKey Conversion_Keys[] = {
-//     {XK_k, ControlMask, ControlMask},
-//     {0L, 0L, 0L}
-// };
-
 static XIMEncoding SupportedEncodings[] = {
     "COMPOUND_TEXT",
     NULL
@@ -102,101 +78,36 @@ Bool Pop(XEvent* xEvent) {
 }
 //queue implementation done
 
-Bool MyGetICValuesHandler(XIMS ims, IMChangeICStruct *call_data)
-{
-    GetIC(call_data);
-    return True;
+static void IMPreeditShow(XIMS ims, IMForwardEventStruct *call_data, IC* ic) {
+    printf("IMPreeditShow\n");
+    IMPreeditCBStruct pcb;
+
+    pcb.major_code        = XIM_PREEDIT_START;
+    pcb.minor_code        = 0;
+    pcb.connect_id        = call_data->connect_id;
+    pcb.icid              = call_data->icid;
+    pcb.todo.return_value = 0;
+    IMCallCallback (ims, (XPointer) & pcb);
+    ic->preedit_enabled = True;
+    ic->preedit_len = 0;    
 }
-
-Bool MySetICValuesHandler(XIMS ims, IMChangeICStruct *call_data)
-{
-#ifdef DEBUG
-    printf("Set IC Values\n");
-#endif
-    SetIC(call_data);
-    return True;
-}
-
-Bool MyOpenHandler(XIMS ims, IMOpenStruct *call_data)
-{
-#ifdef DEBUG
-    printf("new_client lang = %s\n", call_data->lang.name);
-    printf("     connect_id = 0x%x\n", (int)call_data->connect_id);
-#endif
-    return True;
-}
-
-Bool MyCloseHandler(XIMS ims, IMOpenStruct *call_data)
-{
-#ifdef DEBUG
-    printf("closing connect_id 0x%x\n", (int)call_data->connect_id);
-#endif
-    return True;
-}
-
-Bool MyCreateICHandler(XIMS ims, IMChangeICStruct *call_data)
-{
-#ifdef DEBUG
-    printf("Create IC\n");
-#endif
-    CreateIC(call_data);
-    return True;
-}
-
-Bool MyDestroyICHandler(XIMS ims, IMChangeICStruct *call_data)
-{
-#ifdef DEBUG
-    printf("Destroy IC\n");
-#endif
-    DestroyIC(call_data);
-    return True;
-}
-
-// #define STRBUFLEN 64
-// Bool IsKey(XIMS ims, IMForwardEventStruct *call_data, XIMTriggerKey *trigger)
-// {
-//     char strbuf[STRBUFLEN];
-//     KeySym keysym;
-//     int i;
-//     int modifier;
-//     int modifier_mask;
-//     XKeyEvent *kev;
-
-//     memset(strbuf, 0, STRBUFLEN);
-//     kev = (XKeyEvent*)&call_data->event;
-//     XLookupString(kev, strbuf, STRBUFLEN, &keysym, NULL);
-
-//     for (i = 0; trigger[i].keysym != 0; i++) {
-// 	modifier      = trigger[i].modifier;
-// 	modifier_mask = trigger[i].modifier_mask;
-// 	if (((KeySym)trigger[i].keysym == keysym)
-// 	    && ((kev->state & modifier_mask) == modifier))
-//         return True;
-//     }
-//     return False;
-// }
 
 static void IMPreeditDraw(XIMS ims, IMForwardEventStruct *call_data, const wchar_t * buffer)
 {
     IC* ic = FindIC(call_data->icid);
     if (ic == NULL) {
-        printf("cannot find any ic\n");
+        fprintf(stderr, "cannot find any ic\n");
         return;
     }
     printf("id: %d, len = %d, enabled = %d\n",call_data->icid, ic->preedit_len, ic->preedit_enabled);
     if (! ic->preedit_enabled) {
-        printf("IMPreeditShow\n");
-        IMPreeditCBStruct pcb;
-
-        pcb.major_code        = XIM_PREEDIT_START;
-        pcb.minor_code        = 0;
-        pcb.connect_id        = call_data->connect_id;
-        pcb.icid              = call_data->icid;
-        pcb.todo.return_value = 0;
-        IMCallCallback (ims, (XPointer) & pcb);
-        ic->preedit_enabled = True;
-        ic->preedit_len = 0;
+        if (buffer == NULL) {
+            printf("No need to enable preedit\n");
+            return;
+        }
+        IMPreeditShow(ims, call_data, ic);
     }
+    
     IMPreeditCBStruct pcb;
     XIMText text;
     static XIMFeedback feedback[128] = {0};
@@ -339,56 +250,37 @@ void ProcessKey(XIMS ims, IMForwardEventStruct *call_data)
     XSync(ims->core.display, False);    
 }
 
-// Bool MyForwardEventHandler(XIMS ims, IMForwardEventStruct* call_data)
-// {
-//     printf("IMForwardEventStruct\n");
-//     /* Lookup KeyPress Events only */
-//     // fprintf(stderr, "ForwardEventHandler\n");
-//     if (call_data->event.type != KeyPress) {
-//         fprintf(stderr, "bogus event type, ignored\n");
-//     	return True;
-//     }
-
-//     ProcessKey(ims, call_data);
-//     return True;
-// }
-
-Bool MyTriggerNotifyHandler(XIMS ims, IMTriggerNotifyStruct* call_data)
-{
-    return True;
-}
-
-Bool MyPreeditStartReplyHandler(XIMS ims, IMPreeditCBStruct* call_data)
-{
-    return True;
-}
-
-Bool MyPreeditCaretReplyHandler(XIMS ims, IMPreeditCBStruct *call_data)
-{
-    return True;
-}
-
 Bool MyProtoHandler(XIMS ims, IMProtocol* call_data)
 {
     switch (call_data->major_code) {
       case XIM_OPEN:
-        printf("XIM_OPEN:\n");
-	    return MyOpenHandler(ims, call_data);
+        printf("XIM_OPEN: %d\n",  (int)call_data->any.connect_id);
+//     printf("new_client lang = %s\n", call_data->lang.name);
+	    // return MyOpenHandler(ims, call_data);
+        return True;
       case XIM_CLOSE:
-        printf("XIM_CLOSE:\n");
-	    return MyCloseHandler(ims, call_data);
+        printf("XIM_CLOSE: %d\n",  (int)call_data->any.connect_id);
+	    // return MyCloseHandler(ims, call_data);
+        return True;
       case XIM_CREATE_IC:
         printf("XIM_CREATE_IC:\n");
-	    return MyCreateICHandler(ims, call_data);
+        CreateIC(call_data);
+        return True;
+	    // return MyCreateICHandler(ims, call_data);
       case XIM_DESTROY_IC:
         printf("XIM_DESTROY_IC.\n");
-        return MyDestroyICHandler(ims, call_data);
+        DestroyIC(call_data);
+        return True;
+        //return MyDestroyICHandler(ims, call_data);
       case XIM_SET_IC_VALUES:
         printf("XIM_SET_IC_VALUES:\n");
-	    return MySetICValuesHandler(ims, call_data);
+        SetIC(call_data);
+        return True;
+	    //return MySetICValuesHandler(ims, call_data);
       case XIM_GET_IC_VALUES:
         printf("XIM_GET_IC_VALUES:\n");
-	    return MyGetICValuesHandler(ims, call_data);
+        GetIC(call_data);
+	    return True;
       case XIM_FORWARD_EVENT:
 	    ProcessKey(ims, call_data);
         return True;
@@ -412,15 +304,16 @@ Bool MyProtoHandler(XIMS ims, IMProtocol* call_data)
         FirstIndex = LastIndex = 0;
         XIMResetFocus();
 	    return True;
-      case XIM_TRIGGER_NOTIFY:
-        printf("XIM_TRIGGER_NOTIFY:\n");
-	    return MyTriggerNotifyHandler(ims, call_data);
+    //   case XIM_TRIGGER_NOTIFY:
+    //     printf("XIM_TRIGGER_NOTIFY:\n");
+	//     return MyTriggerNotifyHandler(ims, call_data);
       case XIM_PREEDIT_START_REPLY:
         printf("XIM_PREEDIT_START_REPLY:\n");
-	    return MyPreeditStartReplyHandler(ims, call_data);
-      case XIM_PREEDIT_CARET_REPLY:
-        printf("XIM_PREEDIT_CARET_REPLY:\n");
-	    return MyPreeditCaretReplyHandler(ims, call_data);
+        return True;
+	    //return MyPreeditStartReplyHandler(ims, call_data);
+    //   case XIM_PREEDIT_CARET_REPLY:
+    //     printf("XIM_PREEDIT_CARET_REPLY:\n");
+	//     return MyPreeditCaretReplyHandler(ims, call_data);
         case XIM_SYNC_REPLY:
             printf("sync received\n");
             XEvent event;
@@ -470,7 +363,6 @@ int InitXIM() {
     //XIMTriggerKeys *on_keys, *trigger2;
     XIMEncodings *encodings/*, *encoding2*/;
     register int i;
-    char transport[80];		/* enough */
 
     if (!setlocale(LC_CTYPE, "en_US.UTF-8") && !setlocale(LC_CTYPE, "vi_VN.UTF-8")) {
         fputs("Cannot load either en_US.UTF-8 or vi_VN.UTF-8 locale\n"
@@ -520,7 +412,6 @@ int InitXIM() {
     if (ims == (XIMS)NULL) {
         fprintf(stderr, "Can't Open Input Method Service:\n");
         fprintf(stderr, "\tInput Method Name :%s\n", imname);
-        fprintf(stderr, "\tTranport Address:%s\n", transport);
         exit(1);
     }
 
