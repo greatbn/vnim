@@ -376,28 +376,14 @@ void ViGetCurrentWord(wchar_t* outBuffer, int* outLength) {
             wordTransformShift = 0;
             if (needWordTransform && ViIsVowel(sCurrentWord->chars[i].origin)) {
                 wordTransformShift = sCurrentWord->transform;
-                // printf("adding dau\n");
-                if (i > 0 && ViIsVowel(sCurrentWord->chars[i-1].origin)) {
+                
+                if ((sCurrentWord->chars[i].transform > 0)
+                    || (i + 1< (*outLength))
+                    || (i > 1 && sCurrentWord->chars[i-2].origin == VNCharG && sCurrentWord->chars[i-1].origin == VNCharI) //GI
+                    || (i > 1 && sCurrentWord->chars[i-2].origin == VNCharQ && sCurrentWord->chars[i-1].origin == VNCharU)){ //QU 
+                    //this is a transformed letter
+                } else if (i > 0 && ViIsVowel(sCurrentWord->chars[i-1].origin)) {
                     wordTransformShift = 0; 
-                    
-                    if (i + 1< (*outLength)) {
-                        wordTransformShift = sCurrentWord->transform;
-                    }
-                    
-                    //GI
-                    if (i > 1 && sCurrentWord->chars[i-2].origin == VNCharG && sCurrentWord->chars[i-1].origin == VNCharI) {
-                        wordTransformShift = sCurrentWord->transform;
-                    }
-                    
-                    //QU
-                    if (i > 1 && sCurrentWord->chars[i-2].origin == VNCharQ && sCurrentWord->chars[i-1].origin == VNCharU) {
-                        wordTransformShift = sCurrentWord->transform;
-                    }
-                    
-                    //ue
-                    if (sCurrentWord->chars[i-1].origin == VNCharU && sCurrentWord->chars[i].origin == VNCharE) {
-                        wordTransformShift = sCurrentWord->transform;
-                    }
                 }
                 
                 if (wordTransformShift > 0) {
