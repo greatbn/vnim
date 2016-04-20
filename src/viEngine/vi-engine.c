@@ -121,6 +121,11 @@ int ViDoCharRevertTransform(VNWord* word, int transformsNum, UChar transformList
     return NOTHING;
 }
 
+int ViDoCharRevertTransformSingle(VNWord* word, UChar origin, UChar transform) {
+    UChar params[][2] ={{origin, transform}};
+    return ViDoCharRevertTransform(word, 1, params);
+}
+
 void ViCorrection(VNWord* vnWord) {
     printf("ViCorrection\n");
     //currently doing nothing
@@ -396,6 +401,44 @@ void ViGetCurrentWord(wchar_t* outBuffer, int* outLength) {
     outBuffer[*outLength] = 0;
 }
 
+int ViTriggerSelection(int triggerType, int capStatus) {
+    switch (triggerType) {
+        case VNTriggerWFull:
+            return ViDoProcessWFull(sCurrentWord, capStatus);
+        case VNTriggerW:
+            return ViDoProcessW(sCurrentWord);
+        case VNTriggerA:
+            return ViDoCharRevertTransformSingle(sCurrentWord, VNCharA, IndexShift12);
+        case VNTriggerD:
+            return ViDoCharRevertTransformSingle(sCurrentWord, VNCharD, IndexShift2);
+        case VNTriggerE:
+            return ViDoCharRevertTransformSingle(sCurrentWord, VNCharE, IndexShift12);
+        case VNTriggerO:
+            return ViDoCharRevertTransformSingle(sCurrentWord, VNCharO, IndexShift12);
+        case VNTriggerS:
+            return ViDoWordTransform(sCurrentWord, IndexShift2);
+        case VNTriggerF:
+            return ViDoWordTransform(sCurrentWord, IndexShift4);
+        case VNTriggerR:
+            return ViDoWordTransform(sCurrentWord, IndexShift6);
+        case VNTriggerX:
+            return ViDoWordTransform(sCurrentWord, IndexShift8);
+        case VNTriggerJ:
+            return ViDoWordTransform(sCurrentWord, IndexShift10);
+        case VNTriggerZ:
+            return ViDoWordTransform(sCurrentWord, IndexShift0);
+        case VNTriggerAEO:
+            return ViDoProcessAOE(sCurrentWord);
+        case VNTriggerAW:
+            return ViDoCharRevertTransformSingle(sCurrentWord, VNCharA, IndexShift24);
+        case VNTriggerOUW:
+            return ViDoProcessOUW(sCurrentWord);
+        default:
+            fprintf(stderr, "triggerType is not recognized %d\n", triggerType);
+            return NOTHING;
+    }
+}
+
 int ViProcessKey(UChar keyCode, int capStatus) {
     printf("received [%c], capStatus = %d\n",keyCode, capStatus);
     keyCode = tolower(keyCode);
@@ -407,69 +450,7 @@ int ViProcessKey(UChar keyCode, int capStatus) {
     ViUpdateWordBreak(sCurrentWord);
     int i,j;
     
-    int retVal = VNFalse; 
-    switch (ViFindTriggerType(keyCode)) {
-        case VNTriggerWFull:
-            retVal = ViDoProcessWFull(sCurrentWord, capStatus);
-            break;
-        case VNTriggerW:
-            retVal = ViDoProcessW(sCurrentWord);
-            break;
-        case VNTriggerA:
-        {
-            UChar params[][2] ={{VNCharA, IndexShift12}};
-            retVal = ViDoCharRevertTransform(sCurrentWord, 1, params);
-            break;
-        }
-        case VNTriggerD:
-        {
-            UChar params[][2] = {{VNCharD, IndexShift2}};
-            retVal = ViDoCharRevertTransform(sCurrentWord, 1, params);
-            break;
-        }
-        case VNTriggerE:
-        {
-            UChar params[][2] = {{VNCharE, IndexShift12}};
-            retVal = ViDoCharRevertTransform(sCurrentWord, 1, params);
-            break;
-        }
-        case VNTriggerO:
-        {
-            UChar params[][2] = {{VNCharO, IndexShift12}};
-            retVal = ViDoCharRevertTransform(sCurrentWord, 1, params);
-            break;
-        }
-        case VNTriggerS:
-            retVal = ViDoWordTransform(sCurrentWord, IndexShift2);
-            break;
-        case VNTriggerF:
-            retVal = ViDoWordTransform(sCurrentWord, IndexShift4);
-            break;
-        case VNTriggerR:
-            retVal = ViDoWordTransform(sCurrentWord, IndexShift6);
-            break;
-        case VNTriggerX:
-            retVal = ViDoWordTransform(sCurrentWord, IndexShift8);
-            break;
-        case VNTriggerJ:
-            retVal = ViDoWordTransform(sCurrentWord, IndexShift10);
-            break;
-        case VNTriggerZ:
-            retVal = ViDoWordTransform(sCurrentWord, IndexShift0);
-            break;
-        case VNTriggerAEO:
-            retVal = ViDoProcessAOE(sCurrentWord);
-            break;
-        case VNTriggerAW:
-        {
-            UChar params[][2] = {{VNCharA, IndexShift24}};
-            retVal = ViDoCharRevertTransform(sCurrentWord, 1, params);
-            break;
-        }
-        case VNTriggerOUW:
-            retVal = ViDoProcessOUW(sCurrentWord);
-            break;
-    }
+    int retVal = ViTriggerSelection(ViFindTriggerType(keyCode), capStatus); 
     
     if (retVal != PROCESSED && ViAppendWord(sCurrentWord, keyCode, IndexShift0, capStatus)) {
         retVal = PROCESSED;
