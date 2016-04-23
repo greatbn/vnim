@@ -37,7 +37,7 @@ sudo apt-get install gnome-common
 - vnim --silent: To start VNIM with engine disabled
 - Uses Ctrl + Shift or Alt + Z to enable/disable engine
  
-## TODO
+## Todo
 
 ### v0.1.0
 - [x] Support VNI
